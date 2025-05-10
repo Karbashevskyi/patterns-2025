@@ -1,0 +1,19 @@
+{
+  "name": "patterns-2025",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Karbashevskyi/patterns-2025.git"
+  },
+  "author": "Ivan Karbashevskyi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Karbashevskyi/patterns-2025/issues"
+  },
+  "homepage": "https://github.com/Karbashevskyi/patterns-2025#readme"
+}
