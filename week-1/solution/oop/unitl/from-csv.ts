@@ -87,6 +87,10 @@ export class FromCSV<T = object> implements IFromCSVParams {
 
     }
 
+    public invalid(): boolean {
+        return !this.valid();
+    }
+
     public getErrors(): string[] {
         return [...this.errors];
     }
