@@ -90,12 +90,9 @@ export class Bootstrap {
             factory: (object) => mapper.fromObject(object),
         });
 
-        const isInvalid = fromCSV.invalid();
-
-        if (isInvalid) {
-            console.error('Invalid CSV data');
+        if (fromCSV.invalid()) {
             console.error(fromCSV.getErrors());
-            return;
+            throw new Error('Invalid CSV data');
         }
         
         const items = fromCSV.parse();
