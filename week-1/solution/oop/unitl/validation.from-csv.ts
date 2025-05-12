@@ -1,4 +1,4 @@
-import type { IValidationFromCSV } from "../interface/i.from-csv-params";
+import type { IValidationFromCSV } from "../domain/interface/i.from-csv-params";
 
 export function SourceValidation({ source }, errors: string[]) {
     if (!source) {

@@ -1,7 +1,7 @@
 import { data } from "../fixture.ts";
 import { FromCSV } from "./unitl/from-csv.ts";
-import { Terrain } from "./model/terrain.ts";
-import { TerrainMap } from "./application/map/terrain.map.ts";
+import { Terrain } from "./domain/model/terrain.ts";
+import { TerrainMapper } from "./application/mapper/terrain.mapper.ts";
 
 function assertEqual(actual: any, expected: any, message: string): void {
     if (actual !== expected) {
@@ -63,10 +63,14 @@ function runTests() {
 
     describe("Test 4: Data from fixtures", () => {
 
+        const mapper = TerrainMapper.create();
         const fromCSV = FromCSV.create<Terrain>({
             source: data,
-            factory: TerrainMap.fromObject,
+            factory: (object) => mapper.fromObject(object),
         });
+
+        assertEqual(fromCSV.valid(), true, "Fixture data should be valid");
+
         const items = fromCSV.parse();
         assertEqual(items.length, 10, "Fixture data should return an array of length 10");
 

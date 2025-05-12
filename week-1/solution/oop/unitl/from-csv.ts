@@ -1,4 +1,4 @@
-import type { IFromCSVParams, IValidationFromCSV } from "../interface/i.from-csv-params.ts";
+import type { IFromCSVParams, IValidationFromCSV } from "../domain/interface/i.from-csv-params.ts";
 import { defaultValidationsFromCSV } from "./validation.from-csv.ts";
 
 export class FromCSV<T = object> implements IFromCSVParams {
