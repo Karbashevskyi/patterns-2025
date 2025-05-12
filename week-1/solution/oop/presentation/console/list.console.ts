@@ -34,9 +34,12 @@ export class ListConsole<I> {
      * ]);
      */
     public setList(value: I[]) {
-        const { sortBy } = this.#configuration;
+        const { sortBy, sortOrder } = this.#configuration;
         // TODO: Use toSorted instead of sort to avoid mutating the original array.
-        const sortedList = [...value].sort((a, b) => String(a[sortBy]).localeCompare(String(b[sortBy])));
+        const sortedList = [...value].sort((a, b) => {
+            const comparison = String(a[sortBy]).localeCompare(String(b[sortBy]));
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
         this.#list = sortedList;
     }
 

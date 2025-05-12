@@ -16,4 +16,5 @@ export interface IListConsoleConfiguration<I> {
         };
     };
     sortBy: keyof I;
+    sortOrder: 'asc' | 'desc';
 }

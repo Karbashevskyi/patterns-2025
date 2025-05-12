@@ -76,7 +76,8 @@ export const terrainPresentationListConfigutation: IListConsoleConfiguration<ITe
             format: (value) => `${value}%`,
         }
     },
-    sortBy: 'city',
+    sortBy: 'areaPercentageOfMax',
+    sortOrder: 'asc',
 };
 
 export class Bootstrap {
@@ -109,3 +110,4 @@ export class Bootstrap {
 }
 
 Bootstrap.run(data);
+
