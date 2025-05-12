@@ -77,7 +77,7 @@ export const terrainPresentationListConfigutation: IListConsoleConfiguration<ITe
         }
     },
     sortBy: 'areaPercentageOfMax',
-    sortOrder: 'asc',
+    sortOrder: 'desc',
 };
 
 export class Bootstrap {

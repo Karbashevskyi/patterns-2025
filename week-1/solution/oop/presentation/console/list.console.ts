@@ -37,8 +37,17 @@ export class ListConsole<I> {
         const { sortBy, sortOrder } = this.#configuration;
         // TODO: Use toSorted instead of sort to avoid mutating the original array.
         const sortedList = [...value].sort((a, b) => {
-            const comparison = String(a[sortBy]).localeCompare(String(b[sortBy]));
-            return sortOrder === 'asc' ? comparison : -comparison;
+                const [left, right] = sortOrder === 'desc' ? [b, a] : [a, b];
+            switch (typeof a[sortBy]) {
+                case 'number':
+                    return (left[sortBy] as number) - (right[sortBy] as number);
+                case 'string':
+                    return String(left[sortBy]).localeCompare(String(right[sortBy]));
+                case 'boolean':
+                    return Number(left[sortBy]) - Number(right[sortBy]);
+                default:
+                    throw new Error(`Unsupported type for sorting: ${typeof a[sortBy]}`);
+            }
         });
         this.#list = sortedList;
     }
