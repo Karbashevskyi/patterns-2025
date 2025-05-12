@@ -9,6 +9,16 @@ import type { ITerrainWithStatistic } from "./domain/interface/i.terrain-with-st
 export const terrainPresentationListConfigutation: IListConsoleConfiguration<ITerrainWithStatistic> = {
     title: 'List of Terrains:',
     columns: {
+        _index: {
+            title: '#',
+            style: {
+                pad: {
+                    side: 'right',
+                    length: 4,
+                },
+            },
+            format: (value, index) => `${index + 1}`,
+        },
         city: {
             title: 'City',
             style: {
@@ -56,12 +66,13 @@ export const terrainPresentationListConfigutation: IListConsoleConfiguration<ITe
         },
         areaPercentageOfMax: {
             title: 'Area Percentage of Max',
-            style: {
-                pad: {
-                    side: 'left',
-                    length: 8,
-                },
-            },
+            // This comment shows an example of adding a column without styles.
+            // style: { 
+            //     pad: {
+            //         side: 'left',
+            //         length: 8,
+            //     },
+            // },
             format: (value) => `${value}%`,
         }
     },

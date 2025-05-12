@@ -67,32 +67,36 @@ export class ListConsole<I> {
         const header = Object.keys(columns).map((columnKey) => {
             const column = columns[columnKey];
             const text = column?.title || columnKey;
-            const value = Object.keys(column.style).map((styleKey) => {
-                const styleConfig = column.style[styleKey];
-                return styleMap[styleKey](text, styleConfig);
-            });
-            return value.join('');
+            const styleConfig = column?.style;
+            const value = styleConfig ? this.convertValueByStyle(text, styleConfig) : text;
+            return value;
         }).join(' | ');
         console.log(header);
         console.log('-'.repeat(header.length));
 
         // [BODY] Render the list of terrains
-        this.#list.forEach((item) => {
+        this.#list.forEach((item, index) => {
             const row = Object.keys(columns).map((columnKey) => {
                 const value = item[columnKey] || ''; // Handle missing columns gracefully
                 const column = columns[columnKey];
-                const styleConfig = column.style;
+                const styleConfig = column?.style;
 
-                const formattedValue = column.format ? column.format(value) :  String(value);
-                const valueWithStyle = Object.keys(styleConfig).map((styleKey) => {
-                    const styleConfiguration = styleConfig[styleKey];
-                    return styleMap[styleKey](formattedValue, styleConfiguration);
-                });
-                return valueWithStyle.join('');
+                const formattedValue = column.format ? column.format(value, index) :  String(value);
+                const valueWithStyle = styleConfig ? this.convertValueByStyle(formattedValue, styleConfig) : formattedValue;
+                return valueWithStyle;
             }).join(' | ');
             console.log(row);
         });
         console.log();
+    }
+
+    private convertValueByStyle(value: unknown, styleConfig: Record<string, unknown>): string {
+        return Object.keys(styleConfig).map((styleKey) => this.styleValue(value, styleKey, styleConfig)).join('');
+    }
+
+    private styleValue(value: unknown, styleKey: string, styleConfig: Record<string, unknown>): string {
+        const styleConfiguration = styleConfig[styleKey];
+        return styleMap[styleKey](value, styleConfiguration);
     }
 
     public static create<I>(initials: IListConsoleConfiguration<I>): ListConsole<I> {
