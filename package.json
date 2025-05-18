@@ -7,7 +7,8 @@
   "scripts": {
     "test": "test",
     "test:week-1:oop": "node week-1/solution/oop/oop.test.ts",
-    "week-1:oop": "node week-1/solution/oop/index.ts"
+    "week-1:oop": "node week-1/solution/oop/index.ts",
+    "week-1:procedural": "node week-1/solution/procedural/procedural.ts"
   },
   "repository": {
     "type": "git",
