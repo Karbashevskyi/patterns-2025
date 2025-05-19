@@ -10,16 +10,6 @@ const data = `city,population,area,density,country
   New York City,8537673,784,10892,United States
   Bangkok,8280925,1569,5279,Thailand`;
 
-function toString(value) {
-    if (value === null || value === undefined) return '';
-    return String(value).trim();
-}
-
-function toNumber(value) {
-    if (value === null || value === undefined) return 0;
-    return Number(value);
-}
-
 const terrainSchema = [ // Order of the properties is important
     { 
         name: 'city', type: 'string', 
@@ -65,9 +55,9 @@ const updateDensityPercentageOfMax = (items) => {
         ...item,
         densityPercentageOfMax: Math.round((item.density / maxDensity) * 100),
     }));
-}
+};
 
-function buildSort({ by, direction = 'asc' }) {
+const buildSort = ({ by, direction = 'asc' }) => {
     const map = {
         number: (left, right) => (left[by] - right[by]),
         string: (left, right) => String(left[by]).localeCompare(String(right[by])),
@@ -79,27 +69,25 @@ function buildSort({ by, direction = 'asc' }) {
     }));
 }
 
-const styleMap = {
-    cell: (value, {align, length}) => ({left: String.prototype.padEnd, right: String.prototype.padStart}[align].call(value, length)),
-};
+const buildRenderInConsole = ({ schema }) => (list) => list.map((item) => {
+    
+    const styleMap = {
+        cell: (value, {align, length}) => ({left: String.prototype.padEnd, right: String.prototype.padStart}[align].call(value, length)),
+    };
 
-const convertValueByStyle = (value, styleConfig) => Object.keys(styleConfig).map((styleKey) => {
-    const styleConfiguration = styleConfig[styleKey];
-    return styleMap[styleKey](value, styleConfiguration);
-}).join('');
+    const convertValueByStyle = (value, styleConfig) => 
+        Object.entries(styleConfig).map(([styleKey, styleConfiguration]) => 
+            styleMap[styleKey](value, styleConfiguration)).join('')
 
-function renderRow(item, schema) {
-    const row = Object.entries(schema).map(([columnKey, { style, name }]) => {
+    const row = Object.entries(schema).map(([_, { style, name }]) => {
         const value = String(item[name] || ''); // Handle missing columns gracefully
         const valueWithStyle = style ? convertValueByStyle(value, style) : value;
 
         return valueWithStyle;
     }).join(' ');
-    console.log(row);
-}
 
-const buildRenderInConsole = ({ schema }) => (list) => list.map((item) => {
-    renderRow(item, schema);
+    console.log(row);
+
     return item;
 });
 
@@ -113,32 +101,30 @@ const fromCSVtoRows = (csv, rowDelimiter = '\n', ignoreLine = 1) => {
 const fromLinesToSchema = ({ schema, fieldConverter, columnDelimiter = ',' }) => (lines) => lines.map((line) => {
     
     const values = line.split(columnDelimiter);
-    const defaultFieldConverter = (value) => value;
 
     return schema.reduce((item, column, index) => {
         const { type, name } = column;
-        const converter = fieldConverter[type] ?? defaultFieldConverter;
+        const converter = fieldConverter[type] ?? ((x) => x);
         item[name] = converter(values[index]);
         return item;
     }, {});
 
 });
 
-const fromLinesToTerrain = fromLinesToSchema({
-    schema: terrainSchema,
-    fieldConverter: { string: toString, number: toNumber, },
-})
-
 const sortByDensityPercentageOfMax = buildSort({ by: 'densityPercentageOfMax', direction: 'desc' });
 const pipe = (...fns) => (arg) => fns.reduce((acc, fn) => fn(acc), arg);
-const renderInConsole = buildRenderInConsole({ schema: terrainSchema });
+const toString = (value) => value ? String(value) : '';
+const toNumber = (value) => value ? Number(value) : 0;
 
 const proccessor = pipe(
-    (data) => fromCSVtoRows(data),
-    (lines) => fromLinesToTerrain(lines),
-    (terrains) => updateDensityPercentageOfMax(terrains),
-    (terrains) => sortByDensityPercentageOfMax(terrains),
-    (terrains) => renderInConsole(terrains),
+    fromCSVtoRows,
+    fromLinesToSchema({
+        schema: terrainSchema,
+        fieldConverter: { string: toString, number: toNumber, },
+    }),
+    updateDensityPercentageOfMax,
+    sortByDensityPercentageOfMax,
+    buildRenderInConsole({ schema: terrainSchema }),
 );
     
 proccessor(data); // Returns the list of terrains
