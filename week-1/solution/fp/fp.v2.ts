@@ -1,16 +1,12 @@
 import { data } from "../fixture";
 
 function toString(value: unknown): string {
-    if (value === null || value === undefined) {
-        return '';
-    }
+    if (value === null || value === undefined) return '';
     return String(value).trim();
 }
 
 function toNumber(value: unknown): number {
-    if (value === null || value === undefined) {
-        return 0;
-    }
+    if (value === null || value === undefined) return 0;
     return Number(value);
 }
 
@@ -24,13 +20,13 @@ interface ITerrain {
 }
 
 interface IPadConfiguration {
-    side: 'left' | 'right';
+    align: 'left' | 'right';
     length: number;
 }
 
 interface IPresentation {
     style?: {
-        pad?: IPadConfiguration;
+        cell?: IPadConfiguration;
     };
 }
 
@@ -45,42 +41,40 @@ const terrainSchema: ISchema = [ // Order of the properties is important
     { 
         name: 'city', type: 'string', 
         style: { 
-            pad: { side: 'left', length: 18, }, 
+            cell: { align: 'left', length: 18, }, 
         }, 
     },
     { 
         name: 'population', type: 'number', 
         style: { 
-            pad: { side: 'right', length: 10, }, 
+            cell: { align: 'right', length: 10, }, 
         }, 
     },
     { 
         name: 'area', type: 'number', 
         style: { 
-            pad: { side: 'right', length: 8, }, 
+            cell: { align: 'right', length: 8, }, 
         }, 
     },
     { 
         name: 'density', type: 'number', 
         style: { 
-            pad: { side: 'right', length: 8, }, 
+            cell: { align: 'right', length: 8, }, 
         }, 
     },
     { 
         name: 'country', type: 'string', 
         style: { 
-            pad: { side: 'right', length: 18, }, 
+            cell: { align: 'right', length: 18, }, 
         }, 
     },
     { 
         name: 'densityPercentageOfMax', type: 'number', 
         style: { 
-            pad: { side: 'right', length: 8, }, 
+            cell: { align: 'right', length: 8, }, 
         }, 
     },
 ];
-
-const pipe = (...fns: Array<(arg: any) => any>) => (arg: any) => fns.reduce((acc, fn) => fn(acc), arg)
 
 interface ICSVToObjectArguments<T> {
     schema: Array<{ type: string; name: string }>;
@@ -90,45 +84,11 @@ interface ICSVToObjectArguments<T> {
     rowDelimiter?: string; // Default is "\n"
 }
 
-function buildConverterCSV<T>({ schema, fieldConverter, ignoreLine = 1, columnDelimiter = ',', rowDelimiter = '\n', }: ICSVToObjectArguments<T>): ((csv: string) => T[]) {
-
-    return (csv: string): T[] => {
-
-        if (!csv || typeof csv !== 'string') throw new Error('CSV is required');
-
-        let lines = csv.split(rowDelimiter);
-
-        if (ignoreLine > -1) lines = lines.slice(ignoreLine);
-
-        const defaultFieldConverter = ((value: unknown) => value);
-
-        return lines.map((line) => {
-
-            const values = line.split(columnDelimiter);
-
-            const item = {} as T;
-
-            for (const column in schema) {
-                const rawValue = values[column];
-                const { type, name } = schema[column];
-                const converter = fieldConverter[type] ?? defaultFieldConverter;
-                const fieldValue = converter(rawValue);
-                item[name] = fieldValue;
-            }
-
-            return item;
-
-        });
-        
-    }
-
-}
-
 const updateDensityPercentageOfMax = (items: ITerrain[]) => {
     const maxDensity = Math.max(...items.map(item => item.density));
     return items.map(item => ({
         ...item,
-        densityPercentageOfMax: (item.density / maxDensity) * 100,
+        densityPercentageOfMax: Math.round((item.density / maxDensity) * 100),
     }));
 }
 
@@ -150,7 +110,7 @@ function buildSort<T>({ by, direction = 'asc'}: ISortArguments<T>): (items: T[])
 }
 
 const styleMap = {
-    pad: (value: string, {side, length}: IPadConfiguration) => ({left: value.padEnd, right: value.padStart}[side](length)),
+    cell: (value, {align, length}) => ({left: String.prototype.padEnd, right: String.prototype.padStart}[align].call(value, length)),
 };
 
 const convertValueByStyle = (value: unknown, styleConfig: Record<string, unknown>): string => Object.keys(styleConfig).map((styleKey) => {
@@ -172,20 +132,71 @@ const buildRenderInConsole = <I>({ schema }: { schema: ISchema;}) => (list: I[])
     return item;
 });
 
-const fromCSVtoTerrain = buildConverterCSV<ITerrain>({
-    schema: terrainSchema,
-    fieldConverter: { string: toString, number: toNumber, },
+const fromCSVtoRows = (csv: string, rowDelimiter = '\n', ignoreLine = 1) => {
+    if (!csv || typeof csv !== 'string') throw new Error('CSV is required');
+    let lines = csv.split(rowDelimiter);
+    if (ignoreLine > -1) lines = lines.slice(ignoreLine);
+    return lines;
+};
+
+const fromLinesToSchema = <T>({ schema, fieldConverter, columnDelimiter = ',' }: ICSVToObjectArguments<T>) => (lines: string[]) => lines.map((line) => {
+
+    const values = line.split(columnDelimiter);
+    const defaultFieldConverter = (value: unknown) => value;
+
+    return schema.reduce((item, column, index) => {
+        const { type, name } = column;
+        const converter = fieldConverter[type] ?? defaultFieldConverter;
+        item[name] = converter(values[index]);
+        return item;
+    }, {} as T);
+
 });
 
-const sortByDensityPercentageOfMax = buildSort<ITerrain>({ by: 'densityPercentageOfMax', direction: 'desc' });
+const fromLinesToTerrain = fromLinesToSchema<ITerrain>({
+    schema: terrainSchema,
+    fieldConverter: { string: toString, number: toNumber, },
+})
 
+const sortByDensityPercentageOfMax = buildSort<ITerrain>({ by: 'densityPercentageOfMax', direction: 'desc' });
+const pipe = (...fns: Array<(arg: any) => any>) => (arg: any) => fns.reduce((acc, fn) => fn(acc), arg);
 const renderInConsole = buildRenderInConsole<ITerrain>({ schema: terrainSchema });
 
 const proccessor = pipe(
-    fromCSVtoTerrain,
-    updateDensityPercentageOfMax,
-    sortByDensityPercentageOfMax,
-    renderInConsole,
+    (data: string) => fromCSVtoRows(data),
+    (lines: string[]) => fromLinesToTerrain(lines),
+    (terrains: ITerrain[]) => updateDensityPercentageOfMax(terrains),
+    (terrains: ITerrain[]) => sortByDensityPercentageOfMax(terrains),
+    (terrains: ITerrain[]) => renderInConsole(terrains),
 );
+
+// With logger
+// const logger = (message) => {
+//     // console.log(message);
+//     return message;
+// }
+
+// const proccessor = pipe(
+//     logger,
+//     (data) => fromCSVtoRows(data),
+//     logger,
+//     (lines) => fromLinesToTerrain(lines),
+//     logger,
+//     (terrains) => updateDensityPercentageOfMax(terrains),
+//     logger,
+//     (terrains) => sortByDensityPercentageOfMax(terrains),
+//     logger,
+//     (terrains) => renderInConsole(terrains),
+//     logger,
+// );
+
+// Poor perfomance
+// const proccessor = pipe(
+//     fromCSVtoRows,
+//     fromLinesToTerrain,
+//     updateDensityPercentageOfMax,
+//     sortByDensityPercentageOfMax,
+//     renderInConsole,
+// );
     
-proccessor(data);
+proccessor(data); // Returns the list of terrains
