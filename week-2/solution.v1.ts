@@ -91,7 +91,7 @@ class Basket {
     }
 }
 
-const main = async () => {
+const runMain = async () => {
     const goods = PurchaseIterator.create(purchases);
     const basket = new Basket({ limit: 1050 }, (items, total) => {
         console.log(total);
@@ -101,4 +101,4 @@ const main = async () => {
     }
 };
 
-main();
+runMain();
