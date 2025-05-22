@@ -5,45 +5,32 @@
 // to notify us with final list of items, total and
 // escalated errors
 
-interface IPurchase {
+export interface IPurchase {
     name: string;
     price: number;
 }
 
-interface IPurchaseIteratorItem {
-    value: IPurchase | undefined;
-    done: boolean;
+export interface IPurchaseIteratorItem {
+    item: IPurchase;
+    hasMore: boolean;
 }
 
-const purchases: IPurchase[] = [
-  { name: 'Laptop',  price: 1500 },
-  { name: 'Mouse',  price: 25 },
-  { name: 'Keyboard',  price: 100 },
-  { name: 'HDMI cable',  price: 10 },
-  { name: 'Bag', price: 50 },
-  { name: 'Mouse pad', price: 5 },
-];
+export class PurchaseIterator {
 
-class PurchaseIterator {
-
-    private purchase: IPurchaseIteratorItem[] = [];
-    private finishItems: IPurchaseIteratorItem[] = [
-        {
-            value: undefined,
-            done: true,
-        }
-    ];
+    private purchase: IPurchase[] = [];
 
     public constructor(purchase: IPurchase[]) {
-        this.purchase = purchase.map((value) => ({
-            value,
-            done: false,
-        }));
+        this.purchase = [...purchase];
     }
 
     public async *[Symbol.asyncIterator](): AsyncGenerator<IPurchaseIteratorItem, void, unknown> {
-        for (const item of [...this.purchase, ...this.finishItems]) {
-            yield item;
+        let index = 0;
+        for (const item of this.purchase) {
+            yield {
+                item,
+                hasMore: (index < this.purchase.length - 1),
+            };
+            index++;
         }
     }
 
@@ -54,7 +41,7 @@ class PurchaseIterator {
   
 }
 
-class Basket {
+export class Basket {
     private limit = 0;
     private callback: ((items: IPurchase[], total: number) => void) | null = null;
     private items: IPurchase[] = [];
@@ -66,16 +53,17 @@ class Basket {
             this.callback = callback;
     }
 
-    public add(item: IPurchaseIteratorItem) {
-        const { value } = item;
-        if (value) {
-            if ((this.total + value.price) > this.limit) {
+    public add({item, hasMore}: IPurchaseIteratorItem) {
+        if (item) {
+            if ((this.total + item.price) > this.limit) {
                 this.errors.push(new Error(`Limit exceeded: ${this.limit}`));
                 return;
             }
-            this.total += value.price || 0;
-            this.items.push(value);
-        } else {
+            this.total += item.price || 0;
+            this.items.push(item);
+        } 
+        
+        if (!hasMore) {
             // console.log({
             //     errors: this.errors,
             //     items: this.items,
@@ -91,8 +79,17 @@ class Basket {
     }
 }
 
-const runMain = async () => {
-    const goods = PurchaseIterator.create(purchases);
+const purchase: IPurchase[] = [
+  { name: 'Laptop',  price: 1500 },
+  { name: 'Mouse',  price: 25 },
+  { name: 'Keyboard',  price: 100 },
+  { name: 'HDMI cable',  price: 10 },
+  { name: 'Bag', price: 50 },
+  { name: 'Mouse pad', price: 5 },
+];
+
+const main = async () => {
+    const goods = PurchaseIterator.create(purchase);
     const basket = new Basket({ limit: 1050 }, (items, total) => {
         console.log(total);
     });
@@ -101,4 +98,4 @@ const runMain = async () => {
     }
 };
 
-runMain();
+main();
