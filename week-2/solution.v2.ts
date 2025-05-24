@@ -25,17 +25,21 @@ export class PurchaseIterator {
 
 }
 
+interface IResolveArguments {
+    items: IPurchase[];
+    total: number; 
+    errors: Error[];
+}
+
 export class Basket {
 
     private items: IPurchase[] = [];
     private total: number = 0;
     private errors: Error[] = [];
     private limit: number = 0;
-    private onDone: (items: IPurchase[], total: number) => void = (() => {});
 
-    public constructor({ limit }: { limit: number }, onDone?: (items: IPurchase[], total: number) => void) {
+    public constructor({ limit }: { limit: number }) {
         this.limit = limit;
-        this.onDone = onDone ?? this.onDone;
     }
 
     public add(item: IPurchase): void {
@@ -47,13 +51,12 @@ export class Basket {
         }
     }
 
-    public getErrors(): Error[] {
-        return this.errors;
+    public then(resolve: (value: IResolveArguments) => void): void {
+        resolve({ items: this.items, total: this.total, errors: this.errors });
     }
 
-    public then(resolve: (value: any) => void): void {
-        this.onDone(this.items, this.total);
-        resolve({ items: this.items, total: this.total });
+    public end(fn: (value: IResolveArguments) => void) {
+        this.then(fn);
     }
 
 }
@@ -69,13 +72,13 @@ const purchase = [
 
 const main = async () => {
   const goods = PurchaseIterator.create(purchase);
-  const basket = new Basket({ limit: 1050 }, (items, total) => {
-    console.log('Total:', total);
-  });
+  const basket = new Basket({ limit: 1050 });
   for await (const item of goods) {
     basket.add(item);
   }
-  await basket;
+  basket.end(({items, total, errors}) => {
+    console.log('Total:', {items, total, errors});
+  });
 };
 
 main();
