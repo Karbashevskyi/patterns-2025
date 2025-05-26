@@ -6,7 +6,7 @@ export interface IPurchase {
 
 export class PurchaseIterator {
 
-    private readonly items: IPurchase[];
+    private readonly items: IPurchase[] = [];
     public constructor(
         items: IPurchase[]
     ) {
@@ -20,23 +20,35 @@ export class PurchaseIterator {
     }
 
     public static create(items: IPurchase[]): PurchaseIterator {
-        return new PurchaseIterator(items);
+        if (!Array.isArray(items) || !items.length) {
+            throw new Error('Items must be non empty array');
+        }
+        const instance = new PurchaseIterator(items);
+        return instance;
     }
 
 }
 
-interface IResolveArguments {
-    items: IPurchase[];
-    total: number; 
-    errors: Error[];
+export class LimitExceededBasketError extends Error {
+    public readonly item: IPurchase;
+    public constructor(item: IPurchase) {
+        super(`'Basket limit exceeded': ${item.name} costs ${item.price}`);
+        this.item = item;
+    }
+    public static create(item: IPurchase): LimitExceededBasketError {
+        const instance = new LimitExceededBasketError(item);
+        return instance;
+    }
 }
 
 export class Basket {
-
-    private items: IPurchase[] = [];
+    
     private total: number = 0;
-    private errors: Error[] = [];
-    private limit: number = 0;
+
+    private readonly items: IPurchase[] = [];
+    private readonly limit: number = 0;
+    private readonly errors: Error[] = [];
+    private readonly registerCallback: ((value: any) => void)[] = [];
 
     public constructor({ limit }: { limit: number }) {
         this.limit = limit;
@@ -44,22 +56,39 @@ export class Basket {
 
     public add(item: IPurchase): void {
         if (this.total + item.price > this.limit) {
-            this.errors.push(new Error(`Limit exceeded: ${this.limit}`));
+            const error = LimitExceededBasketError.create(item);
+            this.errors.push(error);
         } else {
             this.items.push(item);
             this.total += item.price;
         }
     }
 
-    public then(resolve: (value: IResolveArguments) => void): void {
-        resolve({ items: this.items, total: this.total, errors: this.errors });
+    public end(): void {
+        this.registerCallback.forEach(callback => callback({ items: this.items, total: this.total, errors: this.errors }));
+        this.registerCallback.length = 0; // Clear callbacks after execution
     }
 
-    public end(fn: (value: IResolveArguments) => void) {
-        this.then(fn);
+    public then(resolve: (value: any) => void): void {
+        this.registerCallback.push(resolve);
     }
 
 }
+
+const basketNotify = async (basket: Basket) => {
+    
+    const { items, total, errors } = await basket;
+
+    console.log();
+    console.log('basketNotify');
+    console.log({
+        items,
+        total,
+        errors,
+    });
+    console.log();
+
+};
 
 const purchase = [
   { name: 'Laptop',  price: 1500 },
@@ -71,14 +100,20 @@ const purchase = [
 ];
 
 const main = async () => {
+
   const goods = PurchaseIterator.create(purchase);
   const basket = new Basket({ limit: 1050 });
-  for await (const item of goods) {
-    basket.add(item);
-  }
-  basket.end(({items, total, errors}) => {
-    console.log('Total:', {items, total, errors});
-  });
+
+  basketNotify(basket);
+  
+  for await (const item of goods) basket.add(item);
+
+  basket.then((result) => {
+    console.log('Basket result:', result);
+  })
+
+  basket.end();
+
 };
 
 main();
