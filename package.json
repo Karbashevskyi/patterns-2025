@@ -6,9 +6,22 @@
   "type": "module",
   "scripts": {
     "test": "test",
+    
+    "--START--WEEK-1--": "This section of the code is for week 1",
     "test:week-1:oop": "node week-1/solution/oop/oop.test.ts",
+    
+    "week-1:fp": "node week-1/solution/fp/fp.ts",
+    "week-1:fp:v2": "node week-1/solution/fp/fp.v2.ts",
+    "week-1:fp:v2:js:inspect": "node --inspect-brk week-1/solution/fp/fp.v2.js",
+    "week-1:fp:v2:js": "node week-1/solution/fp/fp.v2.js",
     "week-1:oop": "node week-1/solution/oop/index.ts",
-    "week-1:procedural": "node week-1/solution/procedural/procedural.ts"
+    "week-1:procedural": "node week-1/solution/procedural/procedural.ts",
+    "--FINISH--WEEK-1--": "This section of the code is for week 1",
+
+    "--START--WEEK-2--": "This section of the code is for week 2",
+    "week-2:solution:v1": "node week-2/solution.v1.ts",
+    "week-2:solution:v2": "node week-2/solution.v2.ts",
+    "--FINISH--WEEK-2--": "This section of the code is for week 2"
   },
   "repository": {
     "type": "git",
