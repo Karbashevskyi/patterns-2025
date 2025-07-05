@@ -16,7 +16,7 @@ const poolify = ({factory, size, max }) => {
   const release = (instance) => {
     if (queue.length > 0) {
       queue.shift()(instance);
-    } else if (instances.length <= max) {
+    } else if (instances.length < max) {
       instances.push(instance);
     }
   };

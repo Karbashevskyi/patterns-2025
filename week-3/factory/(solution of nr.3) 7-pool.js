@@ -6,13 +6,15 @@ const poolify = ({ factory, factoryOptions = {}, poolSize = POOL_SIZE }) => {
   const instances = Array.from({ length: poolSize }, () => factory(factoryOptions));
 
   const acquire = () => {
-    const instance = instances.pop() || factory(factoryOptions);
+    const instance = instances.pop();
     console.log('Get from pool, count =', instances.length);
     return instance;
   };
 
   const release = (instance) => {
-    instances.push(instance);
+    if (instances.length < poolSize) {
+      instances.push(instance);
+    }
     console.log('Recycle item, count =', instances.length);
   };
 

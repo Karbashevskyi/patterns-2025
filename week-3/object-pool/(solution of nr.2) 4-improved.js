@@ -4,11 +4,18 @@ class Pool {
   constructor(factory, { size, max }) {
     this.factory = factory;
     this.max = max;
+    this.currentSize = size;
     this.instances = new Array(size).fill(null).map(factory);
   }
 
   acquire() {
-    return this.instances.pop() || this.factory();
+    if (this.instances.length === 0) {
+      if (this.currentSize < this.max) {
+        this.instances.push(this.factory());
+        this.currentSize++;
+      }
+    }
+    return this.instances.pop();
   }
 
   release(instance) {

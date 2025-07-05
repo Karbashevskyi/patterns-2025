@@ -23,7 +23,7 @@ class Pool {
     if (this.queue.length > 0) {
       const resolve = this.queue.shift();
       resolve(instance);
-    } else if (this.instances.length <= this.max) {
+    } else if (this.instances.length < this.max) {
       this.instances.push(instance);
     }
   }

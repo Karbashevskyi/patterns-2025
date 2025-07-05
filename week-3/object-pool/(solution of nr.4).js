@@ -21,7 +21,7 @@ class Pool {
     if (this.queue.length > 0) {
       const cb = this.queue.shift();
       cb(instance);
-    } else if (this.instances.length <= this.max) {
+    } else if (this.instances.length < this.max) {
       this.instances.push(instance);
     }
   }
