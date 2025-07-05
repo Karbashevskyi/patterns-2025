@@ -2,8 +2,18 @@
 
 const poolify = ({ factory, factoryArguments = [], size, max }) => {
   const pool = Array.from({ length: size }, () => factory(...factoryArguments));
+  let currentSize = size;
 
-  const acquire = () => pool.pop() || factory(...factoryArguments);
+  const acquire = () => {
+    if (pool.length > 0) {
+      return pool.pop();
+    }
+    if (currentSize < max) {
+      currentSize++;
+      return factory(...factoryArguments);
+    }
+    throw new Error('No available instances');
+  };
 
   const release = (instance) => {
     const status = pool.length < max && !pool.includes(instance);
