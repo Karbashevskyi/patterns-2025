@@ -4,11 +4,16 @@ class Pool {
   constructor({ factory, size, max }) {
     this.factory = factory;
     this.max = max;
+    this.currentSize = size;
     this.instances = Array.from({ length: size }, this.factory);
     this.queue = [];
   }
 
   acquire(callback) {
+    if (this.instances.length === 0 && this.currentSize < this.max) {
+      this.instances.push(this.factory());
+      this.currentSize++;
+    }
     const instance = this.instances.pop();
     if (instance) {
       callback(instance);

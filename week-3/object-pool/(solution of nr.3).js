@@ -3,8 +3,13 @@
 const poolify = ({ factory, size, max }) => {
   const instances = Array.from({ length: size }, factory);
   const queue = [];
+  let currentSize = size;
 
   const acquire = (callback) => {
+    if (instances.length === 0 && currentSize < max) {
+      instances.push(factory());
+      currentSize++;
+    }
     const instance = instances.pop();
     if (instance) {
       callback(instance);
