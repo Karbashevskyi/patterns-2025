@@ -2,7 +2,7 @@ import fs from "node:fs";
 import readline from "node:readline";
 import path from "node:path";
 
-export class Database {
+class Database {
   constructor() {
     if (new.target === Database) {
       throw new Error(
@@ -16,7 +16,7 @@ export class Database {
   }
 }
 
-export class Cursor {
+class Cursor {
   current = 0;
 
   constructor() {
@@ -32,7 +32,7 @@ export class Cursor {
   }
 }
 
-export class FileLineCursor extends Cursor {
+class FileLineCursor extends Cursor {
   constructor(fileStorage, query = {}) {
     super();
     this.query = query;
@@ -67,7 +67,7 @@ export class FileLineCursor extends Cursor {
   }
 }
 
-export class FileStorage extends Database {
+class FileStorage extends Database {
   constructor(fileName, options = { filePath: "./", skipFileCheck: false }) {
     super();
     if (!options.skipFileCheck) {
@@ -87,8 +87,8 @@ export class FileStorage extends Database {
   }
 
   checkIfFileExists(fileName, filePath = "./") {
-    const fullPath = path.resolve(filePath, fileName);
     try {
+      const fullPath = path.resolve(filePath, fileName);
       fs.accessSync(fullPath);
     } catch (err) {
       throw new Error(`File not found: ${fullPath}`);

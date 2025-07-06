@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import fs from 'node:fs';
-import { FileStorage } from '../3-file-storage.js';
+import FileStorage from '../3-file-storage.js';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

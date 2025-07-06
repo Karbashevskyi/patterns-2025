@@ -2,7 +2,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert';
-import { FileStorage as FSInt } from '../3-file-storage.js';
+import FSInt  from '../3-file-storage.js';
 
 const { mkdtempSync, writeFileSync, existsSync, rmSync } = fs;
 const { join } = path;
