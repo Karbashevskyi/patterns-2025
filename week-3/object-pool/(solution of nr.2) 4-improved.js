@@ -1,6 +1,9 @@
 'use strict';
 
 class Pool {
+
+  #errors = [];
+
   constructor(factory, { size, max }) {
     this.factory = factory;
     this.max = max;
@@ -8,21 +11,37 @@ class Pool {
     this.instances = new Array(size).fill(null).map(factory);
   }
 
+  hasErrors() {
+    return this.#errors.length > 0;
+  }
+
+  getErrors() {
+    return [...this.#errors];
+  }
+
   acquire() {
-    if (this.instances.length === 0) {
-      if (this.currentSize < this.max) {
-        this.instances.push(this.factory());
+    try {
+      let instance = this.instances.pop();
+      if (!instance && this.#canCreateMore()) {
+        instance = this.factory();
         this.currentSize++;
       }
+      return instance;
+    } catch (error) {
+      this.#errors.push(error);
+      return null;
     }
-    return this.instances.pop();
   }
 
   release(instance) {
-    if (this.instances.length < this.max) {
+    const instanceCanBeReturned = this.instances.length < this.max && !this.instances.includes(instance);
+    if (instanceCanBeReturned) {
       this.instances.push(instance);
     }
+    return instanceCanBeReturned;
   }
+
+  #canCreateMore = () => this.currentSize < this.max;
 }
 
 // Usage

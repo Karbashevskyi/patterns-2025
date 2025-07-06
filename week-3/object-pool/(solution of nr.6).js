@@ -1,6 +1,8 @@
-'use strict';
+"use strict";
 
 class Pool {
+  #errors = [];
+
   constructor({ factory, size, max }) {
     this.factory = factory;
     this.max = max;
@@ -9,28 +11,50 @@ class Pool {
     this.queue = [];
   }
 
+  hasErrors() {
+    return this.#errors.length > 0;
+  }
+
+  getErrors() {
+    return [...this.#errors];
+  }
+
   acquire() {
     return new Promise((resolve) => {
-      if (this.instances.length === 0 && this.currentSize < this.max) {
-        this.instances.push(this.factory());
-        this.currentSize++;
-      }
-      const instance = this.instances.pop();
-      if (instance) {
-        resolve(instance);
-      } else {
-        this.queue.push(resolve);
-      }
+      let instance = this.instances.pop();
+      if (!instance && this.#canCreateMore()) instance = this.#createInstance();
+
+      if (instance) this.#executeResolver(resolve, instance);
+      else this.queue.push(resolve);
     });
   }
 
   release(instance) {
-    if (this.queue.length > 0) {
-      const resolve = this.queue.shift();
-      resolve(instance);
-    } else if (this.instances.length < this.max) {
+    const resolve = this.queue.shift();
+    if (resolve) this.#executeResolver(resolve, instance);
+    else if (
+      this.instances.length < this.max &&
+      !this.instances.includes(instance)
+    ) {
       this.instances.push(instance);
     }
+  }
+
+  #executeResolver(resolver, instance) {
+    try {
+      resolver(instance);
+    } catch (error) {
+      this.#errors.push(error);
+      resolver(null);
+    }
+  }
+
+  #canCreateMore = () => this.currentSize < this.max;
+
+  #createInstance() {
+    const instance = this.factory();
+    this.currentSize++;
+    return instance;
   }
 }
 

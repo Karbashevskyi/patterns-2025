@@ -1,26 +1,26 @@
 'use strict';
 
 const poolify = ({ factory, factoryArguments = [], size, max }) => {
-  const pool = Array.from({ length: size }, () => factory(...factoryArguments));
+  const createInstance = () => factory.apply(null, factoryArguments);
+  const pool = Array.from({ length: size }, createInstance);
   let currentSize = size;
+  const canCreateMoreInstances = () => currentSize < max;
 
   const acquire = () => {
-    if (pool.length > 0) {
-      return pool.pop();
-    }
-    if (currentSize < max) {
+    let instance = pool.pop();
+    if (!instance && canCreateMoreInstances()) {
       currentSize++;
-      return factory(...factoryArguments);
+      instance = createInstance();
     }
-    throw new Error('No available instances');
+    return instance;
   };
 
   const release = (instance) => {
-    const status = pool.length < max && !pool.includes(instance);
-    if (status) {
+    const instanceCanBeReturned = pool.length < max && !pool.includes(instance);
+    if (instanceCanBeReturned) {
       pool.push(instance);
     }
-    return status;
+    return instanceCanBeReturned;
   };
 
   return { acquire, release };

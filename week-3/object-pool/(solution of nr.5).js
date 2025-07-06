@@ -1,32 +1,45 @@
-'use strict';
+"use strict";
 
-const poolify = ({factory, size, max }) => {
-  const instances = new Array({length: size}, factory);
+const poolify = ({ factory, size, max }) => {
+  const instances = new Array({ length: size }, factory);
   const queue = [];
   let currentSize = size;
+  const errors = [];
+  const hasErrors = () => errors.length > 0;
+  const getErrors = () => [...errors];
 
-  const acquire = () => new Promise((resolve) => {
-    if (instances.length === 0 && currentSize < max) {
-      instances.push(factory());
-      currentSize++;
-    }
-    const instance = instances.pop();
-    if (instance) {
-      resolve(instance);
-    } else {
-      queue.push(resolve);
-    }
-  });
+  const acquire = () =>
+    new Promise((resolve) => {
+      let instance = instances.pop();
+
+      if (!instance && canCreateMore()) instance = createInstance();
+
+      if (instance) executeCallback(resolve, instance);
+      else queue.push(resolve);
+    });
 
   const release = (instance) => {
-    if (queue.length > 0) {
-      queue.shift()(instance);
-    } else if (instances.length < max) {
+    if (queue.length) executeCallback(queue.shift(), instance);
+    else if (instances.length < max && !instances.includes(instance))
       instances.push(instance);
+  };
+
+  const canCreateMore = () => currentSize < max;
+  const createInstance = () => {
+    if (!canCreateMore()) return null;
+    currentSize++;
+    return factory();
+  };
+  const executeCallback = (callback, instance) => {
+    try {
+      callback(instance);
+    } catch (error) {
+      errors.push(error);
+      callback(null);
     }
   };
 
-  return { acquire, release };
+  return { acquire, release, hasErrors, getErrors };
 };
 
 // Usage
