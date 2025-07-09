@@ -1,12 +1,10 @@
 "use strict";
 
 const poolify = ({ factory, size, max }) => {
-  const instances = new Array({ length: size }, factory);
+  const instances = Array.from({ length: size }, factory);
   const queue = [];
   let currentSize = size;
   const errors = [];
-  const hasErrors = () => errors.length > 0;
-  const getErrors = () => [...errors];
 
   const acquire = () =>
     new Promise((resolve) => {
@@ -14,12 +12,12 @@ const poolify = ({ factory, size, max }) => {
 
       if (!instance && canCreateMore()) instance = createInstance();
 
-      if (instance) executeCallback(resolve, instance);
+      if (instance) resolve(instance);
       else queue.push(resolve);
     });
 
   const release = (instance) => {
-    if (queue.length) executeCallback(queue.shift(), instance);
+    if (queue.length) queue.shift()(instance);
     else if (instances.length < max && !instances.includes(instance))
       instances.push(instance);
   };
@@ -30,16 +28,8 @@ const poolify = ({ factory, size, max }) => {
     currentSize++;
     return factory();
   };
-  const executeCallback = (callback, instance) => {
-    try {
-      callback(instance);
-    } catch (error) {
-      errors.push(error);
-      callback(null);
-    }
-  };
 
-  return { acquire, release, hasErrors, getErrors };
+  return { acquire, release };
 };
 
 // Usage

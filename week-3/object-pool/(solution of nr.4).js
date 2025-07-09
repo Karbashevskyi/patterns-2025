@@ -48,7 +48,11 @@ class Pool {
       callback(null);
     }
   }
-  #canCreateMore = () => this.currentSize < this.max;
+
+  #canCreateMore() {
+    return this.currentSize < this.max;
+  }
+  
   #createInstance() {
     const instance = this.factory();
     this.currentSize++;

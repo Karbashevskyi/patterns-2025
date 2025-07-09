@@ -41,7 +41,9 @@ class Pool {
     return instanceCanBeReturned;
   }
 
-  #canCreateMore = () => this.currentSize < this.max;
+  #canCreateMore() {
+    return this.currentSize < this.max;
+  }
 }
 
 // Usage
