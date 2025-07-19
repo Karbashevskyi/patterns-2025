@@ -39,6 +39,8 @@ export class Strategy {
       throw new Error("behaviourRecord expected to be object");
     }
 
+    behaviourRecord = structuredClone(behaviourRecord);
+
     for (const action of this.actions) {
       if (typeof behaviourRecord[action] !== "function") {
         throw new Error(
@@ -47,7 +49,7 @@ export class Strategy {
       }
     }
 
-    this.#implementations.set(implementationName, behaviourRecord);
+    this.#implementations.set(implementationName, { ...behaviourRecord });
   }
 
   /**
@@ -90,8 +92,10 @@ export class Strategy {
     const { implementations = {}, actions = [] } = parameters;
     const instance = new Strategy(strategyName, actions);
 
-
-    if (Object.keys(implementations).length && !Array.isArray(implementations)) {
+    if (
+      Object.keys(implementations).length &&
+      !Array.isArray(implementations)
+    ) {
       for (const [name, behaviour] of Object.entries(implementations)) {
         instance.registerBehaviour(name, behaviour);
       }
