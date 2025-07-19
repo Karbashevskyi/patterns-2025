@@ -39,7 +39,7 @@ export class Strategy {
       throw new Error("behaviourRecord expected to be object");
     }
 
-    for (const action of this.actions) {
+    for (const action of this.#actions) {
       if (typeof behaviourRecord[action] !== "function") {
         throw new Error(
           `Action "${action}" expected to be function in behaviourRecord`
@@ -57,7 +57,7 @@ export class Strategy {
    * @returns {Function} Action handler function
    */
   getBehaviour(implementationName, actionName) {
-    if (!this.actions.includes(actionName)) {
+    if (!this.#actions.includes(actionName)) {
       throw new Error(
         `Action "${actionName}" is not supported by strategy "${this.strategyName}"`
       );
