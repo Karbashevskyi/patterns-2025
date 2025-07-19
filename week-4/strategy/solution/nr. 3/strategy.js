@@ -39,8 +39,6 @@ export class Strategy {
       throw new Error("behaviourRecord expected to be object");
     }
 
-    behaviourRecord = structuredClone(behaviourRecord);
-
     for (const action of this.actions) {
       if (typeof behaviourRecord[action] !== "function") {
         throw new Error(
