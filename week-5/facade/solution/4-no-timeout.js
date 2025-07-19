@@ -6,7 +6,7 @@ export const timeoutCollection = (interval) => {
 
   const cleanup = () => {
     const now = Date.now();
-    for (const {0: key, 1: expireTime} of expirationTimes.entries()) {
+    for (const {0: key, 1: expireTime} of expirationTimes) {
       if (now >= expireTime) {
         collection.delete(key);
         expirationTimes.delete(key);

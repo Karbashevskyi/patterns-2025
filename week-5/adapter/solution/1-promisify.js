@@ -13,10 +13,12 @@ const promisify = (fn) => (...args) => new Promise((resolve, reject) => {
 
       const callback = (err, data) => {
         if (completed) return;
+        
         completed = true;
+        
         if (timeoutId) clearTimeout(timeoutId);
-        if (err) reject(err);
-        else resolve(data);
+
+        if (err) reject(err); else resolve(data);
       };
 
       const lastArgumentRef = args.at(-1);
@@ -26,6 +28,7 @@ const promisify = (fn) => (...args) => new Promise((resolve, reject) => {
 
         timeoutId = setTimeout(() => {
           if (completed) return;
+
           completed = true;
           reject(new PromisifyTimeoutError());
         }, lastArgument.timeout);

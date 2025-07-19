@@ -12,7 +12,7 @@ const promisify = (fn) => (...args) =>  new Promise((resolve, reject) => {
       const lastArgRef = args.at(-1);
       const hasSignal = typeof lastArgRef === 'object' && lastArgRef !== null && 'signal' in lastArgRef;
       
-      let callback = (err, data) => {
+      const callback = (err, data) => {
         if (completed) return;
         completed = true;
         if (err) reject(err);

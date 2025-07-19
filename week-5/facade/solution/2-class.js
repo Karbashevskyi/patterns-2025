@@ -8,7 +8,7 @@ export class TimerDelayError extends Error {
 }
 
 export class TimeoutCollection {
-  constructor(timeout, ...arrayData) {
+  constructor(timeout, arrayData) {
     if (typeof timeout !== "number" || timeout <= 0)
       throw new TimerDelayError();
     this.timeout = timeout;
@@ -29,7 +29,7 @@ export class TimeoutCollection {
       this.delete(key);
     }, this.timeout);
 
-    if (typeof timeout.unref === "function") {
+    if (typeof timeout?.unref === "function") {
       timeout.unref();
     }
 

@@ -7,7 +7,7 @@ export class TimerDelayError extends Error {
   }
 }
 
-export const TimeoutCollection = function (timeout, ...arrayData) {
+export const TimeoutCollection = function (timeout, arrayData) {
   if (typeof timeout !== "number" || timeout <= 0) throw new TimerDelayError();
   this.timeout = timeout;
   this.collection = new Map();
@@ -27,7 +27,7 @@ TimeoutCollection.prototype.set = function (key, value) {
     this.delete(key);
   }, this.timeout);
 
-  if (typeof timeout.unref === "function") {
+  if (typeof timeout?.unref === "function") {
     // Usefull in Node.js to prevent the timer from keeping the event loop alive when there are no other active timers.
     timeout.unref();
   }

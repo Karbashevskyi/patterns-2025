@@ -7,7 +7,7 @@ export class TimerDelayError extends Error {
   }
 }
 
-export const timeoutCollection = (interval, ...arrayData) => {
+export const timeoutCollection = (interval, arrayData) => {
   if (typeof interval !== "number" || interval <= 0) throw new TimerDelayError();
   const collection = new Map();
   const timers = new Map();
