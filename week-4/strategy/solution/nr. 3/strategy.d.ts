@@ -1,5 +1,5 @@
 interface Parameters<ACTIONS extends readonly [string, ...string[]]> {
-  actions: ACTIONS;
+  actions?: ACTIONS;
   implementations?: {
     [implementationName: string]: {
       [action in ACTIONS[number]]: Function;
@@ -21,9 +21,6 @@ export declare class Strategy<ACTIONS extends readonly [string, ...string[]]> {
 
   public static create<ACTIONS extends readonly [string, ...string[]]>(
     strategyName: string,
-    parameters: {
-      actions: ACTIONS;
-      implementations?: Record<string, Record<ACTIONS[number], Function>>;
-    }
+    parameters: Parameters<ACTIONS>
   ): Strategy<ACTIONS>;
 }

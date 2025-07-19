@@ -1,11 +1,10 @@
 export const selectStrategy = (strategy, name) => {
-  const keys = Object.keys(strategy);
-  
-  if (keys.includes(name)) {
+
+  if (name in strategy) {
     return strategy[name];
   }
   
-  if (keys.includes('abstract')) {
+  if ('abstract' in strategy) {
     return strategy.abstract;
   }
   

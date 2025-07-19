@@ -39,15 +39,18 @@ export class Strategy {
       throw new Error("behaviourRecord expected to be object");
     }
 
+    const goodBehaviorRecord = {};
+
     for (const action of this.#actions) {
       if (typeof behaviourRecord[action] !== "function") {
         throw new Error(
           `Action "${action}" expected to be function in behaviourRecord`
         );
       }
+      goodBehaviorRecord[action] = behaviourRecord[action];
     }
 
-    this.#implementations.set(implementationName, { ...behaviourRecord });
+    this.#implementations.set(implementationName, goodBehaviorRecord);
   }
 
   /**
@@ -70,14 +73,7 @@ export class Strategy {
       );
     }
 
-    const handler = behaviour[actionName];
-    if (!handler) {
-      throw new Error(
-        `Action "${actionName}" for implementation "${implementationName}" is not found`
-      );
-    }
-
-    return handler;
+    return behaviour[actionName];
   }
 
   /**
@@ -91,10 +87,12 @@ export class Strategy {
     const instance = new Strategy(strategyName, actions);
 
     if (
+      typeof implementations === "object" &&
+      implementations !== null &&
       Object.keys(implementations).length &&
       !Array.isArray(implementations)
     ) {
-      for (const [name, behaviour] of Object.entries(implementations)) {
+      for (const {0: name, 1: behaviour} of Object.entries(implementations)) {
         instance.registerBehaviour(name, behaviour);
       }
     }
