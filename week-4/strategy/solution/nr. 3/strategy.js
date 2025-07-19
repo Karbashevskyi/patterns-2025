@@ -1,5 +1,4 @@
 export class Strategy {
-
   #actions = [];
   #implementations = new Map();
 
@@ -8,17 +7,19 @@ export class Strategy {
    * @param {string} strategyName - Name of the strategy
    * @param {Object} parameters - Parameters for the strategy
    */
-  constructor(strategyName, parameters = {actions: [], implementations: {}}) {
-    if (typeof strategyName !== 'string') {
-      throw new Error('Strategy name expected to be string');
+  constructor(strategyName, actions = []) {
+    if (typeof strategyName !== "string") {
+      throw new Error("Strategy name expected to be string");
     }
-    if (!Array.isArray(parameters.actions)) {
-      throw new Error('Actions expected to be array');
+    if (!Array.isArray(actions)) {
+      throw new Error("Actions expected to be array");
     }
-    
+    if (actions.some((action) => typeof action !== "string")) {
+      throw new Error("Actions expected to be array of strings");
+    }
+
     this.strategyName = strategyName;
-    this.#actions = [...parameters.actions];
-    this.#initializeImplementations(parameters.implementations);
+    this.#actions = [...actions];
   }
 
   get actions() {
@@ -31,16 +32,18 @@ export class Strategy {
    * @param {Object} behaviourRecord - Object containing action implementations
    */
   registerBehaviour(implementationName, behaviourRecord) {
-    if (typeof implementationName !== 'string') {
-      throw new Error('Implementation name expected to be string');
+    if (typeof implementationName !== "string") {
+      throw new Error("Implementation name expected to be string");
     }
-    if (typeof behaviourRecord !== 'object' || behaviourRecord === null) {
-      throw new Error('behaviourRecord expected to be object');
+    if (typeof behaviourRecord !== "object" || behaviourRecord === null) {
+      throw new Error("behaviourRecord expected to be object");
     }
 
     for (const action of this.actions) {
-      if (typeof behaviourRecord[action] !== 'function') {
-        throw new Error(`Action "${action}" expected to be function in behaviourRecord`);
+      if (typeof behaviourRecord[action] !== "function") {
+        throw new Error(
+          `Action "${action}" expected to be function in behaviourRecord`
+        );
       }
     }
 
@@ -55,37 +58,26 @@ export class Strategy {
    */
   getBehaviour(implementationName, actionName) {
     if (!this.actions.includes(actionName)) {
-      throw new Error(`Action "${actionName}" is not supported by strategy "${this.strategyName}"`);
+      throw new Error(
+        `Action "${actionName}" is not supported by strategy "${this.strategyName}"`
+      );
     }
 
     const behaviour = this.#implementations.get(implementationName);
     if (!behaviour) {
-      throw new Error(`Implementation "${implementationName}" not found for strategy "${this.strategyName}"`);
+      throw new Error(
+        `Implementation "${implementationName}" not found for strategy "${this.strategyName}"`
+      );
     }
 
     const handler = behaviour[actionName];
     if (!handler) {
-      throw new Error(`Action "${actionName}" for implementation "${implementationName}" is not found`);
+      throw new Error(
+        `Action "${actionName}" for implementation "${implementationName}" is not found`
+      );
     }
 
     return handler;
-  }
-
-  /**
-   * Initialize implementations map
-   * @param {*} implementations - Object containing initial implementations
-   * @throws {Error} If implementations is not an object or is null
-   * @private
-   * @returns {void}
-   */
-  #initializeImplementations(implementations) {
-    if (typeof implementations !== 'object' || implementations === null || Array.isArray(implementations)) {
-      throw new Error('Implementations expected to be object');
-    }
-
-    for (const [name, behaviour] of Object.entries(implementations)) {
-      this.registerBehaviour(name, behaviour);
-    }
   }
 
   /**
@@ -94,7 +86,17 @@ export class Strategy {
    * @param {*} parameters - Parameters for the strategy
    * @returns {Strategy} New Strategy instance
    */
-  static create(strategyName, parameters = {actions: []}) {
-    return new Strategy(strategyName, parameters);
+  static create(strategyName, parameters = {}) {
+    const { implementations = {}, actions = [] } = parameters;
+    const instance = new Strategy(strategyName, actions);
+
+
+    if (Object.keys(implementations).length && !Array.isArray(implementations)) {
+      for (const [name, behaviour] of Object.entries(implementations)) {
+        instance.registerBehaviour(name, behaviour);
+      }
+    }
+
+    return instance;
   }
 }

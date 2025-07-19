@@ -7,7 +7,7 @@ import { Strategy } from '../nr. 3/strategy.js';
  */
 
 // Example 1: With 'as const' - preserves literal types
-const strategyWithLiterals = new Strategy('test', {
+const strategyWithLiterals = Strategy.create('test', {
   actions: ['action1', 'action2', '123'] as const,
   implementations: {
     impl1: {
@@ -23,7 +23,7 @@ const strategyWithLiterals = new Strategy('test', {
 // And getBehaviour will only accept 'action1' | 'action2' | '123'
 
 // Example 2: Without 'as const' - widens to string[]
-const strategyWithoutLiterals = new Strategy('test2', {
+const strategyWithoutLiterals = Strategy.create('test2', {
   actions: ['notify', 'multicast'], // This becomes string[]
   implementations: {
     email: {

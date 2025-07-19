@@ -8,7 +8,7 @@ interface Parameters<ACTIONS extends readonly [string, ...string[]]> {
 }
 
 export declare class Strategy<ACTIONS extends readonly [string, ...string[]]> {
-  public constructor(strategyName: string, parameters: Parameters<ACTIONS>);
+  public constructor(strategyName: string, actions: ACTIONS);
 
   public readonly strategyName: string;
   public readonly actions: ACTIONS;
@@ -19,11 +19,11 @@ export declare class Strategy<ACTIONS extends readonly [string, ...string[]]> {
   ): void;
   public getBehaviour(implementationName: string, actionName: ACTIONS[number]): Function;
 
-  public static create<U extends readonly [string, ...string[]]>(
+  public static create<ACTIONS extends readonly [string, ...string[]]>(
     strategyName: string,
     parameters: {
-      actions: U;
-      implementations?: Record<string, Record<U[number], Function>>;
+      actions: ACTIONS;
+      implementations?: Record<string, Record<ACTIONS[number], Function>>;
     }
-  ): Strategy<U>;
+  ): Strategy<ACTIONS>;
 }
