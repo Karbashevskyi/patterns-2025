@@ -8,7 +8,6 @@ export class Database {
     
     constructor(driver = null) {
         this.driver = driver;
-        this.isInitialized = false;
     }
 
     /**
@@ -16,9 +15,6 @@ export class Database {
      * @param {Driver} driver - The database driver to use
      */
     setDriver(driver) {
-        if (this.isInitialized) {
-            throw new Error('Cannot change driver after database has been initialized');
-        }
         this.driver = driver;
     }
 
@@ -84,10 +80,9 @@ export class Database {
     /**
      * Close the database connection
      */
-    close() {
-        if (this.isInitialized && this.driver) {
-            this.driver.close();
-            this.isInitialized = false;
+    async close() {
+        if (this.driver) {
+            await this.driver.close();
         }
     }
 

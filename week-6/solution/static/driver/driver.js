@@ -70,17 +70,9 @@ export class Driver {
     }
 
     /**
-     * Simple query that returns filtered data
-     * @param {string} storeName - Name of the store/table
-     * @param {Function} filterFn - Filter function
-     * @returns {Promise<Array>} Promise that resolves with filtered data
-     */
-    async querySimple(storeName, filterFn) {
-        throw new Error('querySimple() method must be implemented by subclass');
-    }    /**
      * Close the database connection
      */
-    close() {
+    async close() {
         throw new Error('close() method must be implemented by subclass');
     }
 }

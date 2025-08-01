@@ -117,18 +117,16 @@ export class IndexedDBDriver extends Driver {
     return promise;
   }
 
-  async querySimple(storeName, filterFn) {
-    return this.query(storeName, { filter: filterFn });
-  }
-
   getNestedValue(obj, path) {
     return path.split(".").reduce((current, key) => current?.[key], obj);
   }
 
-  close() {
-    if (!this.db) return;
-    this.db.close();
-    this.db = null;
+  async close() {
+    const db = await this.dbAsync;
+    if (!db) return;
+    db.close();
+    this.dbAsync.clear();
+    this.dbAsync = null;
   }
 
   #openDatabase() {
