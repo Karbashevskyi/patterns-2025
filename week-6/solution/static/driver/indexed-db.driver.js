@@ -142,7 +142,7 @@ export class IndexedDBDriver extends Driver {
         if (!db.objectStoreNames.contains(storeName)) {
           const store = db.createObjectStore(storeName, config);
           if (config.indexes) {
-            for (const [indexName, indexConfig] of Object.entries(
+            for (const {0: indexName, 1: indexConfig} of Object.entries(
               config.indexes
             )) {
               store.createIndex(indexName, indexConfig.keyPath, indexConfig);
