@@ -1,5 +1,6 @@
 import { Driver } from "./driver.js";
 import { createSharedPromise } from "./utility/shared-promise.js";
+import { sortArray, getNestedValue } from "./utility/sort.helper.js";
 
 export class IndexedDBDriver extends Driver {
   constructor(
@@ -85,21 +86,7 @@ export class IndexedDBDriver extends Driver {
       const cursor = event.target.result;
       if (!cursor) {
         if (sort) {
-          results.sort((a, b) => {
-            const { field, direction = "asc" } =
-              typeof sort === "string"
-                ? { field: sort, direction: "asc" }
-                : sort;
-
-            const aVal = this.getNestedValue(a, field);
-            const bVal = this.getNestedValue(b, field);
-
-            let comparison = 0;
-            if (aVal > bVal) comparison = 1;
-            if (aVal < bVal) comparison = -1;
-
-            return direction === "desc" ? -comparison : comparison;
-          });
+          sortArray(results, sort);
         }
 
         resolve(results);
@@ -117,8 +104,48 @@ export class IndexedDBDriver extends Driver {
     return promise;
   }
 
-  getNestedValue(obj, path) {
-    return path.split(".").reduce((current, key) => current?.[key], obj);
+  async* openCursor(storeName, options = {}) {
+    const { range = null, direction = "next", indexName = null } = options;
+    
+    const db = await this.dbAsync;
+    const transaction = db.transaction(storeName, "readonly");
+    const store = transaction.objectStore(storeName);
+    
+    // Use index if specified, otherwise use the object store directly
+    const source = indexName ? store.index(indexName) : store;
+    const request = source.openCursor(range, direction);
+
+    while (true) {
+      const cursor = await new Promise((resolve, reject) => {
+        request.onsuccess = (event) => {
+          resolve(event.target.result);
+        };
+        request.onerror = (event) => {
+          reject(event.target.error);
+        };
+      });
+
+      if (!cursor) {
+        return;
+      }
+
+      if (cursor.value !== undefined) {
+        yield cursor.value;
+        cursor.continue();
+      }
+    }
+  }
+
+  async* iterateAll(storeName) {
+    yield* this.openCursor(storeName);
+  }
+
+  async* iterateFiltered(storeName, filterFn) {
+    for await (const record of this.openCursor(storeName)) {
+      if (filterFn(record)) {
+        yield record;
+      }
+    }
   }
 
   async close() {
