@@ -1,0 +1,2 @@
+  - Week 6: Events
+    - Prepare wrapper for [native indexedDB API (see `Native` folder)](https://github.com/HowProgrammingWorks/indexedDB), to have promise/async/await syntax for better domain code experience.
