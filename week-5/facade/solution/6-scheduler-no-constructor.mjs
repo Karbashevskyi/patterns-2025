@@ -1,6 +1,6 @@
 'use strict';
 
-const { EventEmitter } = require('node:events');
+import { EventEmitter } from 'node:events';
 
 export class Logger {
   static color(level) {
@@ -117,22 +117,26 @@ export class SchedulerTimeError extends Error {
   }
 }
 
+const DEFAULT_STRATEGIES = {
+  number: IntervalTask.create,
+  string: ScheduledTask.create,
+};
+
 export class Scheduler extends EventEmitter {
-  constructor(logger) {
+  constructor(logger, strategies = {}) {
     super();
     this.tasks = new Map();
     this.logger = logger;
+    this.strategies = strategies;
   }
 
   task(name, time, exec) {
     this.stop(name);
 
-    const task = {
-      number: () => IntervalTask.create(name, time, exec),
-      string: () => ScheduledTask.create(name, time, exec),
-    }[typeof time]();
-    
-    if (!task) throw new SchedulerTimeError();
+    const strategy = typeof time;
+    const taskClass = this.strategies[strategy];
+    if (!taskClass) throw new SchedulerTimeError();
+    const task = taskClass(name, time, exec);
 
     this.tasks.set(name, task);
     task.on('error', (err) => {
@@ -163,8 +167,8 @@ export class Scheduler extends EventEmitter {
     }
   }
 
-  static create(logger = new Logger()) {
-    return new Scheduler(logger);
+  static create(logger = new Logger(), strategies = DEFAULT_STRATEGIES) {
+    return new Scheduler(logger, strategies);
   }
 }
 
