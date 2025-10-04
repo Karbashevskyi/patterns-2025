@@ -1,20 +1,3 @@
-/**
- * Week 9: Enterprise Approach (Over-engineered)
- * 
- * This implementation shows EXCESSIVE use of:
- * - Abstractions and interfaces
- * - Factories and builders
- * - Dependency injection
- * - Design patterns (sometimes unnecessary)
- * - Ceremonies and boilerplate
- * 
- * PROBLEMS:
- * - Too verbose
- * - Hard to follow business logic
- * - Over-abstraction
- * - Cognitive overhead
- */
-
 // ============================================================================
 // INTERFACES (Too many!)
 // ============================================================================
@@ -405,7 +388,6 @@ class QueryExecutorImpl extends IQueryExecutor {
   async execute(query) {
     const connection = await this.connectionProvider.getConnection();
     console.log('Enterprise: Executing query:', query);
-    // Simulate execution
     return [
       { id: 1, name: 'John', email: 'john@example.com' },
       { id: 2, name: 'Jane', email: 'jane@example.com' },
@@ -416,7 +398,6 @@ class QueryExecutorImpl extends IQueryExecutor {
 class QueryValidatorImpl extends IQueryValidator {
   validate(query) {
     console.log('Enterprise: Validating query');
-    // Simulate validation
     return true;
   }
 }
@@ -424,7 +405,6 @@ class QueryValidatorImpl extends IQueryValidator {
 class QueryOptimizerImpl extends IQueryOptimizer {
   optimize(query) {
     console.log('Enterprise: Optimizing query');
-    // Simulate optimization
     return query;
   }
 }
@@ -432,7 +412,6 @@ class QueryOptimizerImpl extends IQueryOptimizer {
 class ConnectionProviderImpl extends IConnectionProvider {
   async getConnection() {
     console.log('Enterprise: Getting database connection');
-    // Simulate connection
     return { connected: true };
   }
 }
@@ -514,7 +493,6 @@ export async function enterpriseExample() {
   console.log('Lines of code: ~500+ for simple query');
 }
 
-// Export for comparison
 export {
   QueryBuilderFactory,
   SelectQueryBuilderImpl,

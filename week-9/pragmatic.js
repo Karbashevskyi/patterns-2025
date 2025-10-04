@@ -1,26 +1,3 @@
-/**
- * Week 9: Pragmatic Approach (Too Simple)
- * 
- * This implementation shows:
- * - Minimal abstraction
- * - Direct implementation
- * - Expressive DSL
- * - Mixed concerns
- * 
- * PROBLEMS:
- * - Breaks Separation of Concerns
- * - Violates Single Responsibility Principle
- * - Hard to test in isolation
- * - Tight coupling
- * - Business logic mixed with infrastructure
- * 
- * BENEFITS:
- * - Very expressive and readable
- * - Quick to write
- * - Easy to understand
- * - Low cognitive overhead
- */
-
 // ============================================================================
 // ALL-IN-ONE QUERY BUILDER (Mixing everything)
 // ============================================================================
@@ -38,39 +15,34 @@ class Query {
     this._having = [];
   }
 
-  // SELECT clause - mixes query building and formatting
   select(...fields) {
     this._select = fields;
     return this;
   }
 
-  // FROM clause
   from(table) {
     this._from = table;
     return this;
   }
 
-  // WHERE clause - handles formatting inline
   where(field, operator, value) {
     // Mixing formatting logic here (bad SoC)
-    const formatted = this._formatValue(value);
+    const formatted = this.#formatValue(value);
     this._where.push({ field, operator, value: formatted, logic: 'AND' });
     return this;
   }
 
   orWhere(field, operator, value) {
-    const formatted = this._formatValue(value);
+    const formatted = this.#formatValue(value);
     this._where.push({ field, operator, value: formatted, logic: 'OR' });
     return this;
   }
 
-  // Direct where with raw SQL (very pragmatic but unsafe)
   whereRaw(sql) {
     this._where.push({ raw: sql, logic: 'AND' });
     return this;
   }
 
-  // JOIN - simple but mixed concerns
   join(table, leftField, rightField) {
     this._joins.push({ type: 'INNER', table, leftField, rightField });
     return this;
@@ -81,26 +53,22 @@ class Query {
     return this;
   }
 
-  // ORDER BY
   orderBy(field, direction = 'ASC') {
     this._orderBy.push({ field, direction });
     return this;
   }
 
-  // GROUP BY
   groupBy(...fields) {
     this._groupBy = fields;
     return this;
   }
 
-  // HAVING
   having(field, operator, value) {
-    const formatted = this._formatValue(value);
+    const formatted = this.#formatValue(value);
     this._having.push({ field, operator, value: formatted });
     return this;
   }
 
-  // LIMIT and OFFSET
   limit(value) {
     this._limit = value;
     return this;
@@ -111,13 +79,12 @@ class Query {
     return this;
   }
 
-  // Convenience methods (mixing concerns but very expressive)
   whereId(id) {
     return this.where('id', '=', id);
   }
 
   whereIn(field, values) {
-    const formatted = values.map(v => this._formatValue(v)).join(', ');
+    const formatted = values.map(v => this.#formatValue(v)).join(', ');
     this._where.push({ field, operator: 'IN', value: `(${formatted})`, logic: 'AND' });
     return this;
   }
@@ -136,8 +103,7 @@ class Query {
     return this;
   }
 
-  // Value formatting (mixing infrastructure with business logic)
-  _formatValue(value) {
+  #formatValue(value) {
     if (value === null || value === undefined) {
       return 'NULL';
     }
@@ -153,31 +119,26 @@ class Query {
     return String(value);
   }
 
-  // Build query (mixing parsing, validation, and string building)
   toSQL() {
     const parts = [];
 
-    // SELECT
     if (this._select.length === 0) {
       parts.push('SELECT *');
     } else {
       parts.push(`SELECT ${this._select.join(', ')}`);
     }
 
-    // FROM
     if (!this._from) {
       throw new Error('FROM clause is required');
     }
     parts.push(`FROM ${this._from}`);
 
-    // JOINS
     if (this._joins.length > 0) {
       this._joins.forEach(j => {
         parts.push(`${j.type} JOIN ${j.table} ON ${j.leftField} = ${j.rightField}`);
       });
     }
 
-    // WHERE
     if (this._where.length > 0) {
       const conditions = this._where.map((w, i) => {
         if (w.raw) {
@@ -189,29 +150,24 @@ class Query {
       parts.push(`WHERE ${conditions.join(' ')}`);
     }
 
-    // GROUP BY
     if (this._groupBy.length > 0) {
       parts.push(`GROUP BY ${this._groupBy.join(', ')}`);
     }
 
-    // HAVING
     if (this._having.length > 0) {
       const conditions = this._having.map(h => `${h.field} ${h.operator} ${h.value}`);
       parts.push(`HAVING ${conditions.join(' AND ')}`);
     }
 
-    // ORDER BY
     if (this._orderBy.length > 0) {
       const orders = this._orderBy.map(o => `${o.field} ${o.direction}`);
       parts.push(`ORDER BY ${orders.join(', ')}`);
     }
 
-    // LIMIT
     if (this._limit !== null) {
       parts.push(`LIMIT ${this._limit}`);
     }
 
-    // OFFSET
     if (this._offset !== null) {
       parts.push(`OFFSET ${this._offset}`);
     }
@@ -224,8 +180,6 @@ class Query {
     const sql = this.toSQL();
     console.log('Pragmatic: Executing:', sql);
 
-    // Directly executing here (no separation of concerns)
-    // In real app, this would call database directly
     return this._mockExecute(sql);
   }
 
@@ -239,9 +193,7 @@ class Query {
     return await this.execute();
   }
 
-  // Mock execution (mixing data access layer)
   async _mockExecute(sql) {
-    // Simulate database call
     await new Promise(resolve => setTimeout(resolve, 10));
     
     return [
@@ -250,7 +202,6 @@ class Query {
     ];
   }
 
-  // Result transformation (mixing ORM concerns)
   async map(fn) {
     const results = await this.execute();
     return results.map(fn);
@@ -277,7 +228,6 @@ class Schema {
     this.tables = {};
   }
 
-  // Define table (mixing schema definition with validation)
   table(name, callback) {
     const table = new Table(name);
     callback(table);
@@ -285,12 +235,10 @@ class Schema {
     return this;
   }
 
-  // Get table
   getTable(name) {
     return this.tables[name];
   }
 
-  // Generate CREATE TABLE SQL (mixing schema with SQL generation)
   toSQL() {
     return Object.values(this.tables)
       .map(table => table.toSQL())
@@ -343,7 +291,6 @@ class Table {
     return this;
   }
 
-  // Constraints (mixing)
   nullable() {
     const lastColumn = this.columns[this.columns.length - 1];
     lastColumn.nullable = true;
@@ -368,13 +315,11 @@ class Table {
     return this;
   }
 
-  // Indexes
   index(fields) {
     this.indexes.push({ fields: Array.isArray(fields) ? fields : [fields] });
     return this;
   }
 
-  // Generate CREATE TABLE (mixing schema definition with SQL generation)
   toSQL() {
     const columnDefs = this.columns.map(col => {
       let def = `  ${col.name} ${col.type}`;
@@ -410,9 +355,6 @@ function schema() {
   return new Schema();
 }
 
-// Ultra-short aliases (pragmatic but can be confusing)
-const q = query;
-const s = schema;
 
 // ============================================================================
 // USAGE (Very expressive and readable!)
@@ -444,7 +386,6 @@ export async function pragmaticExample() {
   console.log('Schema SQL:');
   console.log(db.toSQL());
 
-  // Query - VERY expressive!
   console.log('\n--- Query Examples ---\n');
 
   const users = await query()
@@ -458,7 +399,6 @@ export async function pragmaticExample() {
 
   console.log('Users:', users);
 
-  // More complex query
   const posts = await query()
     .select('posts.*', 'users.name as author')
     .from('posts')
@@ -470,7 +410,6 @@ export async function pragmaticExample() {
 
   console.log('Posts:', posts);
 
-  // Convenience methods
   const user = await query()
     .from('users')
     .whereId(1)
@@ -491,5 +430,4 @@ export async function pragmaticExample() {
   console.log('BUT: Everything is mixed together!');
 }
 
-// Export for comparison
-export { Query, Schema, query, schema, q, s };
+export { Query, Schema, query, schema };

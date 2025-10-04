@@ -1,11 +1,3 @@
-/**
- * Week 9: Comparison Demo
- * 
- * Run all three approaches and compare:
- * 1. Enterprise (over-engineered)
- * 2. Pragmatic (too simple)
- * 3. Balanced (best of both)
- */
 
 import { enterpriseExample } from './enterprise.js';
 import { pragmaticExample } from './pragmatic.js';
@@ -16,19 +8,15 @@ async function main() {
   console.log('║  Week 9: Expressive DSLs - Three Approaches Comparison    ║');
   console.log('╚═══════════════════════════════════════════════════════════╝');
 
-  // Run Enterprise approach
   await enterpriseExample();
   console.log('\n' + '═'.repeat(60) + '\n');
 
-  // Run Pragmatic approach
   await pragmaticExample();
   console.log('\n' + '═'.repeat(60) + '\n');
 
-  // Run Balanced approach
   await balancedExample();
   console.log('\n' + '═'.repeat(60) + '\n');
 
-  // Final comparison
   printComparison();
 }
 
@@ -100,7 +88,6 @@ function printComparison() {
     },
   ];
 
-  // Print table
   console.log('┌─────────────────────────┬──────────────────────────┬──────────────────────────┬──────────────────────────┐');
   console.log('│ Aspect                  │ Enterprise               │ Pragmatic                │ Balanced                 │');
   console.log('├─────────────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────┤');
@@ -111,7 +98,6 @@ function printComparison() {
 
   console.log('└─────────────────────────┴──────────────────────────┴──────────────────────────┴──────────────────────────┘\n');
 
-  // Summary scores
   console.log('╔═══════════════════════════════════════════════════════════╗');
   console.log('║                      SUMMARY SCORES                       ║');
   console.log('╚═══════════════════════════════════════════════════════════╝\n');
@@ -156,5 +142,4 @@ function pad(str, length) {
   return emoji + clean + ' '.repeat(Math.max(0, needed));
 }
 
-// Run the comparison
 main().catch(console.error);

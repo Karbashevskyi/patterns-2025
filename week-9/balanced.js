@@ -1,24 +1,3 @@
-/**
- * Week 9: Balanced Approach (Best of Both Worlds)
- * 
- * This implementation combines:
- * ✅ Expressive DSL (from Pragmatic)
- * ✅ Proper responsibility assignment (from Enterprise)
- * ✅ Clear separation of concerns
- * ✅ Single responsibility per component
- * ✅ Easy to test
- * ✅ Easy to extend
- * ✅ NO unnecessary abstractions
- * ✅ Clear business logic flow
- * 
- * STRATEGY:
- * - Fluent API for expressiveness
- * - Separate components for different responsibilities
- * - Minimal but sufficient abstraction
- * - Composition over inheritance
- * - No factories/DI unless needed
- */
-
 // ============================================================================
 // VALUE FORMATTER (Single Responsibility: Format values for SQL)
 // ============================================================================
@@ -105,19 +84,16 @@ class QueryBuilder {
     this._offset = null;
   }
 
-  // ---- SELECT ----
   select(...fields) {
     this._select.push(...fields);
     return this;
   }
 
-  // ---- FROM ----
   from(table) {
     this._from = table;
     return this;
   }
 
-  // ---- WHERE ----
   where(field, operator, value) {
     this._where.add(field, operator, value, 'AND');
     return this;
@@ -133,7 +109,6 @@ class QueryBuilder {
     return this;
   }
 
-  // Convenience methods (expressive!)
   whereId(id) {
     return this.where('id', '=', id);
   }
@@ -156,7 +131,6 @@ class QueryBuilder {
     return this;
   }
 
-  // ---- JOIN ----
   join(table, leftField, operator, rightField, type = 'INNER') {
     this._joins.push({ table, leftField, operator, rightField, type });
     return this;
@@ -170,25 +144,21 @@ class QueryBuilder {
     return this.join(table, leftField, operator, rightField, 'RIGHT');
   }
 
-  // ---- ORDER BY ----
   orderBy(field, direction = 'ASC') {
     this._orderBy.push({ field, direction: direction.toUpperCase() });
     return this;
   }
 
-  // ---- GROUP BY ----
   groupBy(...fields) {
     this._groupBy.push(...fields);
     return this;
   }
 
-  // ---- HAVING ----
   having(field, operator, value) {
     this._having.add(field, operator, value, 'AND');
     return this;
   }
 
-  // ---- LIMIT & OFFSET ----
   limit(value) {
     this._limit = value;
     return this;
@@ -199,7 +169,6 @@ class QueryBuilder {
     return this;
   }
 
-  // ---- BUILD SQL ----
   toSQL() {
     if (!this._from) {
       throw new Error('FROM clause is required');
@@ -207,47 +176,38 @@ class QueryBuilder {
 
     const parts = [];
 
-    // SELECT
     const selectClause = this._select.length === 0
       ? 'SELECT *'
       : `SELECT ${this._select.join(', ')}`;
     parts.push(selectClause);
 
-    // FROM
     parts.push(`FROM ${this._from}`);
 
-    // JOINS
     this._joins.forEach(join => {
       parts.push(
         `${join.type} JOIN ${join.table} ON ${join.leftField} ${join.operator} ${join.rightField}`
       );
     });
 
-    // WHERE
     const whereClause = this._where.toSQL();
     if (whereClause) parts.push(whereClause);
 
-    // GROUP BY
     if (this._groupBy.length > 0) {
       parts.push(`GROUP BY ${this._groupBy.join(', ')}`);
     }
 
-    // HAVING
     const havingClause = this._having.toSQL().replace('WHERE', 'HAVING');
     if (havingClause) parts.push(havingClause);
 
-    // ORDER BY
     if (this._orderBy.length > 0) {
       const orders = this._orderBy.map(o => `${o.field} ${o.direction}`);
       parts.push(`ORDER BY ${orders.join(', ')}`);
     }
 
-    // LIMIT
     if (this._limit !== null) {
       parts.push(`LIMIT ${this._limit}`);
     }
 
-    // OFFSET
     if (this._offset !== null) {
       parts.push(`OFFSET ${this._offset}`);
     }
@@ -255,7 +215,6 @@ class QueryBuilder {
     return parts.join(' ');
   }
 
-  // ---- EXECUTION ----
   async execute() {
     const sql = this.toSQL();
     return await this.executor.execute(sql);
@@ -295,16 +254,12 @@ class QueryExecutor {
   async execute(sql) {
     console.log('Balanced: Executing:', sql);
     
-    // In real implementation, use actual database connection
-    // For now, mock the execution
     return this._mockExecute(sql);
   }
 
   async _mockExecute(sql) {
-    // Simulate database call
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    // Mock data
     return [
       { id: 1, name: 'John', email: 'john@example.com', age: 25, active: true },
       { id: 2, name: 'Jane', email: 'jane@example.com', age: 30, active: true },
@@ -340,7 +295,6 @@ class ColumnDefinition {
   }
 
   nullable() {
-    // Remove NOT NULL if exists
     this.constraints = this.constraints.filter(c => c !== 'NOT NULL');
     return this;
   }
@@ -368,7 +322,6 @@ class TableDefinition {
     this.indexes = [];
   }
 
-  // Column types
   id(name = 'id') {
     const col = new ColumnDefinition(name, 'INTEGER');
     col.primaryKey().autoIncrement();
@@ -412,7 +365,6 @@ class TableDefinition {
     return col;
   }
 
-  // Indexes
   index(...fields) {
     this.indexes.push({ fields, type: 'INDEX' });
     return this;
@@ -479,7 +431,6 @@ function schema() {
 export async function balancedExample() {
   console.log('\n=== BALANCED APPROACH ===\n');
 
-  // --- Schema Definition (Expressive!) ---
   console.log('--- Schema Definition ---\n');
   
   const db = schema()
@@ -505,10 +456,8 @@ export async function balancedExample() {
 
   console.log(db.toSQL());
 
-  // --- Query Examples (Expressive and clean!) ---
   console.log('\n--- Query Examples ---\n');
 
-  // Simple query
   const users = await query()
     .select('id', 'name', 'email')
     .from('users')
@@ -520,7 +469,6 @@ export async function balancedExample() {
 
   console.log('Active adult users:', users);
 
-  // Complex query with join
   const postsWithAuthors = await query()
     .select('posts.*', 'users.name as author_name', 'users.email as author_email')
     .from('posts')
@@ -532,7 +480,6 @@ export async function balancedExample() {
 
   console.log('Recent posts with authors:', postsWithAuthors);
 
-  // Convenience methods
   const user = await query()
     .from('users')
     .whereId(1)
@@ -547,7 +494,6 @@ export async function balancedExample() {
 
   console.log('User emails:', emails);
 
-  // Aggregation
   const activeCount = await query()
     .from('users')
     .where('active', '=', true)
@@ -567,7 +513,6 @@ export async function balancedExample() {
   console.log('Complexity: Just right!');
 }
 
-// Export for comparison
 export {
   QueryBuilder,
   SchemaBuilder,

@@ -1,7 +1,3 @@
-/**
- * Week 9: Complex Query Examples
- * Demonstrates advanced features using the Balanced Approach
- */
 
 import { query } from '../balanced.js';
 
@@ -9,7 +5,6 @@ console.log('╔═════════════════════�
 console.log('║            Complex Query Examples (Balanced)              ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
-// Example 1: JOIN
 console.log('1. INNER JOIN');
 console.log('─'.repeat(60));
 
@@ -24,7 +19,6 @@ const joinQuery = query()
 console.log(joinQuery);
 console.log('');
 
-// Example 2: LEFT JOIN
 console.log('2. LEFT JOIN (include users without posts)');
 console.log('─'.repeat(60));
 
@@ -38,7 +32,6 @@ const leftJoinQuery = query()
 console.log(leftJoinQuery);
 console.log('');
 
-// Example 3: Multiple JOINs
 console.log('3. Multiple JOINs');
 console.log('─'.repeat(60));
 
@@ -54,7 +47,6 @@ const multiJoinQuery = query()
 console.log(multiJoinQuery);
 console.log('');
 
-// Example 4: GROUP BY with HAVING
 console.log('4. GROUP BY with HAVING clause');
 console.log('─'.repeat(60));
 
@@ -71,7 +63,6 @@ console.log(groupQuery);
 console.log('Explanation: Find users who have more than 5 posts');
 console.log('');
 
-// Example 5: Complex WHERE conditions
 console.log('5. Complex WHERE conditions');
 console.log('─'.repeat(60));
 
@@ -88,7 +79,6 @@ const complexWhereQuery = query()
 console.log(complexWhereQuery);
 console.log('');
 
-// Example 6: Advanced aggregation
 console.log('6. Advanced aggregation query');
 console.log('─'.repeat(60));
 
@@ -111,7 +101,6 @@ console.log(aggregationQuery);
 console.log('Explanation: Product statistics by category (only categories with 10+ products)');
 console.log('');
 
-// Example 7: Subquery-like pattern
 console.log('7. Recent activity report');
 console.log('─'.repeat(60));
 
@@ -138,7 +127,6 @@ console.log(activityQuery);
 console.log('Explanation: User activity report with post and comment counts');
 console.log('');
 
-// Example 8: Real-world e-commerce query
 console.log('8. E-commerce: Find top customers');
 console.log('─'.repeat(60));
 
@@ -166,7 +154,6 @@ console.log(ecommerceQuery);
 console.log('Explanation: Top 10 customers by spend in 2024 (minimum $1000)');
 console.log('');
 
-// Example 9: Raw SQL integration
 console.log('9. Using raw SQL for special cases');
 console.log('─'.repeat(60));
 
@@ -182,12 +169,10 @@ console.log(rawSqlQuery);
 console.log('Explanation: Users between 18-65 years old (calculated from birthdate)');
 console.log('');
 
-// Example 10: Execution with real-world scenario
 console.log('10. Execute complex query');
 console.log('─'.repeat(60));
 
 async function complexExecution() {
-  // Find active users with recent posts
   const activeAuthors = await query()
     .select(
       'users.id',

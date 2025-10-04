@@ -1,7 +1,3 @@
-/**
- * Week 9: Schema Definition Examples
- * Demonstrates expressive schema DSL using the Balanced Approach
- */
 
 import { schema } from '../balanced.js';
 
@@ -9,7 +5,6 @@ console.log('╔═════════════════════�
 console.log('║          Schema Definition Examples (Balanced)            ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
-// Example 1: Simple table
 console.log('1. Simple users table');
 console.log('─'.repeat(60));
 
@@ -24,7 +19,6 @@ const simpleSchema = schema()
 console.log(simpleSchema.toSQL());
 console.log('');
 
-// Example 2: Table with constraints
 console.log('2. Table with constraints and defaults');
 console.log('─'.repeat(60));
 
@@ -43,7 +37,6 @@ const constraintsSchema = schema()
 console.log(constraintsSchema.toSQL());
 console.log('');
 
-// Example 3: Related tables (blog system)
 console.log('3. Blog system schema (users, posts, comments)');
 console.log('─'.repeat(60));
 
@@ -98,7 +91,6 @@ const blogSchema = schema()
 console.log(blogSchema.toSQL());
 console.log('');
 
-// Example 4: E-commerce schema
 console.log('4. E-commerce schema (products, orders, etc.)');
 console.log('─'.repeat(60));
 
@@ -178,7 +170,6 @@ const ecommerceSchema = schema()
 console.log(ecommerceSchema.toSQL());
 console.log('');
 
-// Example 5: Social media schema
 console.log('5. Social media schema');
 console.log('─'.repeat(60));
 
