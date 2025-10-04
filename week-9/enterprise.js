@@ -1,27 +1,8 @@
 // ============================================================================
-// INTERFACES (Too many!)
-// ============================================================================
-
-class IQueryBuilder {}
-class IWhereClauseBuilder {}
-class ISelectClauseBuilder {}
-class IFromClauseBuilder {}
-class IJoinClauseBuilder {}
-class IQueryExecutor {}
-class IResultMapper {}
-class IConnectionProvider {}
-class IQueryValidator {}
-class IQueryOptimizer {}
-class ISchemaDefinition {}
-class ITableDefinition {}
-class IColumnDefinition {}
-class IDataTypeStrategy {}
-
-// ============================================================================
 // ABSTRACT BASE CLASSES (Unnecessary layer)
 // ============================================================================
 
-class AbstractQueryBuilder extends IQueryBuilder {
+class AbstractQueryBuilder {
   constructor(executor, validator, optimizer) {
     super();
     if (this.constructor === AbstractQueryBuilder) {
@@ -379,7 +360,7 @@ class OrderByClause {
 // IMPLEMENTATIONS (More boilerplate)
 // ============================================================================
 
-class QueryExecutorImpl extends IQueryExecutor {
+class QueryExecutorImpl {
   constructor(connectionProvider) {
     super();
     this.connectionProvider = connectionProvider;
@@ -395,21 +376,21 @@ class QueryExecutorImpl extends IQueryExecutor {
   }
 }
 
-class QueryValidatorImpl extends IQueryValidator {
+class QueryValidatorImpl {
   validate(query) {
     console.log('Enterprise: Validating query');
     return true;
   }
 }
 
-class QueryOptimizerImpl extends IQueryOptimizer {
+class QueryOptimizerImpl {
   optimize(query) {
     console.log('Enterprise: Optimizing query');
     return query;
   }
 }
 
-class ConnectionProviderImpl extends IConnectionProvider {
+class ConnectionProviderImpl {
   async getConnection() {
     console.log('Enterprise: Getting database connection');
     return { connected: true };
