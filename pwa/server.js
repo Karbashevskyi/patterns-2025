@@ -137,7 +137,14 @@ wss.on('connection', (ws, req) => {
   const data = { type: 'connected', clientId, userCount, recentMessages };
   ws.send(JSON.stringify(data));
 
-  broadcast({ type: 'userCount', count: userCount }, clientId);
+  // Повідомити всіх про нового користувача
+  broadcast({
+    type: 'userJoined',
+    clientId,
+    count: userCount,
+    timestamp: new Date().toISOString(),
+  }, clientId);
+
   console.log(`Client connected: ${clientId} (Total: ${connections.size})`);
 
   ws.on('message', (data) => {
@@ -158,7 +165,15 @@ wss.on('connection', (ws, req) => {
     console.log(`WebSocket connection closed: ${clientId}`);
     connections.delete(clientId);
     const count = connections.size;
-    broadcast({ type: 'userCount', count }, clientId);
+    
+    // Повідомити всіх про відключення користувача
+    broadcast({
+      type: 'userLeft',
+      clientId,
+      count,
+      timestamp: new Date().toISOString(),
+    });
+    
     console.log(`Client disconnected: ${clientId} (Total: ${count})`);
   });
 

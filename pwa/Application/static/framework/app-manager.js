@@ -234,6 +234,16 @@ export class AppManager {
       }
     });
 
+    this.eventBus.on('worker:userJoined', (data) => {
+      const shortId = data.clientId.substring(0, 8);
+      this.logger.info(`User joined: ${shortId} (Total: ${data.count})`);
+    });
+
+    this.eventBus.on('worker:userLeft', (data) => {
+      const shortId = data.clientId.substring(0, 8);
+      this.logger.info(`User left: ${shortId} (Total: ${data.count})`);
+    });
+
     this.eventBus.on('worker:error', (data) => {
       this.logger.error('Service Worker error:', data.error);
     });
