@@ -34,8 +34,7 @@ week-10/
 Simply open `demo.html` in a modern web browser:
 
 ```bash
-# Using Python
-python3 -m http.server 8000
+http-server
 
 # Using Node.js
 npx serve
@@ -48,8 +47,7 @@ npx serve
 Test both storage implementations in the browser:
 
 ```bash
-# Serve the files
-python3 -m http.server 8000
+http-server
 
 # Then open http://localhost:8000/week-10/test-runner.html
 # Click "Run All Tests" button

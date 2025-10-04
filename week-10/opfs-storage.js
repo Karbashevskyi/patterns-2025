@@ -1,20 +1,6 @@
-/**
- * Week 10: OPFS Storage Adapter
- * 
- * Implementation of IStorage using Origin Private File System (OPFS).
- * Stores each record as a separate JSON file.
- */
-
 import { IStorage } from './storage-interface.js';
 
-/**
- * OPFS Storage Implementation
- * Uses Origin Private File System for browser-side storage
- */
 export class OPFSStorage extends IStorage {
-  /**
-   * @param {string} name - Storage name (used as directory name)
-   */
   constructor(name) {
     super();
     this.name = name;
@@ -22,18 +8,12 @@ export class OPFSStorage extends IStorage {
     this.isInitialized = false;
   }
 
-  /**
-   * Initialize OPFS storage
-   * @private
-   */
-  async _ensureInitialized() {
+  async ensureInitialized() {
     if (this.isInitialized) return;
 
     try {
-      // Get the root directory for OPFS
       const root = await navigator.storage.getDirectory();
       
-      // Create/get a directory for this storage
       this.directoryHandle = await root.getDirectoryHandle(this.name, { create: true });
       
       this.isInitialized = true;
@@ -42,50 +22,32 @@ export class OPFSStorage extends IStorage {
     }
   }
 
-  /**
-   * Get file handle for a record
-   * @private
-   */
-  async _getFileHandle(id, create = false) {
-    await this._ensureInitialized();
+  async #getFileHandle(id, create = false) {
+    await this.ensureInitialized();
     const filename = `${id}.json`;
     
     try {
       return await this.directoryHandle.getFileHandle(filename, { create });
     } catch (error) {
-      if (error.name === 'NotFoundError') {
-        return null;
-      }
+      if (error.name === 'NotFoundError') return null;
       throw error;
     }
   }
 
-  /**
-   * Read file content as JSON
-   * @private
-   */
-  async _readFile(fileHandle) {
+  async #readFile(fileHandle) {
     const file = await fileHandle.getFile();
     const text = await file.text();
     return JSON.parse(text);
   }
 
-  /**
-   * Write JSON to file
-   * @private
-   */
-  async _writeFile(fileHandle, data) {
+  async #writeFile(fileHandle, data) {
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(data, null, 2));
     await writable.close();
   }
 
-  /**
-   * Get all file handles in directory
-   * @private
-   */
-  async _getAllFileHandles() {
-    await this._ensureInitialized();
+  async #getAllFileHandles() {
+    await this.ensureInitialized();
     const handles = [];
     
     for await (const [name, handle] of this.directoryHandle.entries()) {
@@ -97,39 +59,31 @@ export class OPFSStorage extends IStorage {
     return handles;
   }
 
-  // IStorage interface implementation
-
   async create(record) {
-    if (!record.id) {
-      throw new Error('Record must have an id');
-    }
+    if (!record.id) throw new Error('Record must have an id');
 
-    const fileHandle = await this._getFileHandle(record.id, false);
-    if (fileHandle) {
-      throw new Error(`Record with id '${record.id}' already exists`);
-    }
+    const fileHandle = await this.#getFileHandle(record.id, false);
+    if (fileHandle) throw new Error(`Record with id '${record.id}' already exists`);
 
-    const newFileHandle = await this._getFileHandle(record.id, true);
-    await this._writeFile(newFileHandle, record);
+    const newFileHandle = await this.#getFileHandle(record.id, true);
+    await this.#writeFile(newFileHandle, record);
     
     return record.id;
   }
 
   async read(id) {
-    const fileHandle = await this._getFileHandle(id, false);
-    if (!fileHandle) {
-      return null;
-    }
+    const fileHandle = await this.#getFileHandle(id, false);
+    if (!fileHandle) return null;
 
-    return await this._readFile(fileHandle);
+    return await this.#readFile(fileHandle);
   }
 
   async readAll() {
-    const fileHandles = await this._getAllFileHandles();
+    const fileHandles = await this.#getAllFileHandles();
     const records = [];
 
     for (const fileHandle of fileHandles) {
-      const record = await this._readFile(fileHandle);
+      const record = await this.#readFile(fileHandle);
       records.push(record);
     }
 
@@ -137,35 +91,31 @@ export class OPFSStorage extends IStorage {
   }
 
   async update(id, updates) {
-    const fileHandle = await this._getFileHandle(id, false);
-    if (!fileHandle) {
-      throw new Error(`Record with id '${id}' not found`);
-    }
+    const fileHandle = await this.#getFileHandle(id, false);
+    if (!fileHandle) throw new Error(`Record with id '${id}' not found`);
 
-    const record = await this._readFile(fileHandle);
+    const record = await this.#readFile(fileHandle);
     const updatedRecord = { ...record, ...updates, id }; // Ensure id is not changed
     
-    await this._writeFile(fileHandle, updatedRecord);
+    await this.#writeFile(fileHandle, updatedRecord);
     
     return updatedRecord;
   }
 
   async delete(id) {
-    await this._ensureInitialized();
+    await this.ensureInitialized();
     
     try {
       await this.directoryHandle.removeEntry(`${id}.json`);
       return true;
     } catch (error) {
-      if (error.name === 'NotFoundError') {
-        return false;
-      }
+      if (error.name === 'NotFoundError') return false;
       throw error;
     }
   }
 
   async deleteAll() {
-    const fileHandles = await this._getAllFileHandles();
+    const fileHandles = await this.#getAllFileHandles();
     let count = 0;
 
     for (const fileHandle of fileHandles) {
@@ -181,12 +131,12 @@ export class OPFSStorage extends IStorage {
   }
 
   async exists(id) {
-    const fileHandle = await this._getFileHandle(id, false);
+    const fileHandle = await this.#getFileHandle(id, false);
     return fileHandle !== null;
   }
 
   async count() {
-    const fileHandles = await this._getAllFileHandles();
+    const fileHandles = await this.#getAllFileHandles();
     return fileHandles.length;
   }
 
@@ -199,19 +149,13 @@ export class OPFSStorage extends IStorage {
   }
 
   async close() {
-    // OPFS doesn't require explicit cleanup
     this.directoryHandle = null;
     this.isInitialized = false;
   }
 }
 
-/**
- * Factory function to create OPFS storage
- * @param {string} name - Storage name
- * @returns {Promise<OPFSStorage>} Initialized OPFS storage instance
- */
 export async function createOPFSStorage(name) {
   const storage = new OPFSStorage(name);
-  await storage._ensureInitialized();
+  await storage.ensureInitialized();
   return storage;
 }

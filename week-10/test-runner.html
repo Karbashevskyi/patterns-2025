@@ -254,7 +254,6 @@
       byType: {}
     };
 
-    // Logging functions
     function log(message, type = 'info') {
       const line = document.createElement('div');
       line.className = `log-line log-${type}`;
@@ -278,7 +277,6 @@
       log('');
     }
 
-    // Initialize capabilities
     function initCapabilities() {
       const hasIndexedDB = StorageFactory.isAvailable('indexeddb');
       const hasOPFS = StorageFactory.isAvailable('opfs');
@@ -293,7 +291,7 @@
       document.getElementById('recommended').textContent = recommended ? recommended.toUpperCase() : 'None';
     }
 
-    // Storage Test Suite
+    
     class StorageTestSuite {
       constructor(storage, name) {
         this.storage = storage;
@@ -452,7 +450,7 @@
       }
     }
 
-    // Test migration
+    
     async function testMigration() {
       logSection('Testing Storage Migration');
 
@@ -505,7 +503,7 @@
       }
     }
 
-    // Update progress bar
+    
     let totalTests = 0;
     function updateProgress() {
       const percent = totalTests > 0 ? Math.round((testResults.total / totalTests) * 100) : 0;
@@ -514,9 +512,9 @@
       fill.textContent = percent + '%';
     }
 
-    // Run all tests
+    
     async function runAllTests() {
-      // Reset
+      
       output.innerHTML = '';
       testResults = { total: 0, passed: 0, failed: 0, byType: {} };
       document.getElementById('summary').style.display = 'none';
@@ -530,11 +528,11 @@
       log(`Recommended: ${StorageFactory.getRecommended()}`, 'info');
       log('');
 
-      // Calculate total tests
-      totalTests = availableTypes.length * 14; // 14 tests per storage type
+      
+      totalTests = availableTypes.length * 14; 
       updateProgress();
 
-      // Test each storage type
+      
       for (const type of availableTypes) {
         try {
           const storage = await createStorage(`test-${type}`, type);
@@ -549,10 +547,10 @@
         }
       }
 
-      // Test migration
+      
       await testMigration();
 
-      // Print summary
+      
       logSection('OVERALL SUMMARY');
       
       for (const [type, results] of Object.entries(testResults.byType)) {
@@ -578,19 +576,19 @@
         log('⚠️  Some tests failed. Review the results above.', 'warning');
       }
 
-      // Show summary
+      
       showSummary();
       document.getElementById('progress').classList.remove('active');
       document.getElementById('run-tests').disabled = false;
     }
 
-    // Show summary
+    
     function showSummary() {
       const summary = document.getElementById('summary');
       const content = document.getElementById('summary-content');
       content.innerHTML = '';
 
-      // Overall stats
+      
       const items = [
         { label: 'Total Tests', value: testResults.total, failed: false },
         { label: 'Passed', value: testResults.passed, failed: false },
@@ -611,7 +609,7 @@
       summary.style.display = 'block';
     }
 
-    // Event listeners
+    
     document.getElementById('run-tests').addEventListener('click', runAllTests);
     
     document.getElementById('clear-output').addEventListener('click', () => {
@@ -635,7 +633,7 @@
       }
     });
 
-    // Initialize
+    
     initCapabilities();
   </script>
 </body>

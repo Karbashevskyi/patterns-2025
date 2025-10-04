@@ -436,7 +436,6 @@
 
     let currentStorage = null;
 
-    // Initialize storage capabilities
     function initStorageOptions() {
       const availableTypes = StorageFactory.getAvailableTypes();
       const recommended = StorageFactory.getRecommended();
@@ -462,7 +461,6 @@
         });
       });
 
-      // Auto-select recommended storage
       if (recommended) {
         switchStorage(recommended);
       } else {
@@ -470,18 +468,18 @@
       }
     }
 
-    // Switch storage implementation
+    
     async function switchStorage(type) {
       try {
-        // Close previous storage
+        
         if (currentStorage) {
           await currentStorage.close();
         }
 
-        // Create new storage
+        
         currentStorage = await createStorage('demo-users', type);
 
-        // Update UI
+        
         document.querySelectorAll('.storage-option').forEach(opt => {
           opt.classList.toggle('selected', opt.dataset.type === type);
         });
@@ -494,7 +492,7 @@
       }
     }
 
-    // Update statistics
+    
     async function updateStats() {
       if (!currentStorage) return;
 
@@ -503,14 +501,14 @@
       document.getElementById('stat-count').textContent = await currentStorage.count();
     }
 
-    // Show alert
+    
     function showAlert(containerId, message, type) {
       const container = document.getElementById(containerId);
       container.innerHTML = `<div class="alert ${type}">${message}</div>`;
       setTimeout(() => container.innerHTML = '', 5000);
     }
 
-    // Load and display records
+    
     async function loadRecords() {
       if (!currentStorage) return;
 
@@ -552,7 +550,7 @@
       await updateStats();
     }
 
-    // Edit record
+    
     window.editRecord = async (id) => {
       const record = await currentStorage.read(id);
       if (!record) return;
@@ -574,7 +572,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Delete record
+    
     window.deleteRecord = async (id) => {
       if (!confirm(`Delete record ${id}?`)) return;
 
@@ -587,7 +585,7 @@
       }
     };
 
-    // Form submission
+    
     document.getElementById('record-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -627,16 +625,16 @@
       }
     });
 
-    // Clear form
+    
     document.getElementById('clear-form').addEventListener('click', () => {
       document.getElementById('record-form').reset();
       document.getElementById('record-id').readOnly = false;
     });
 
-    // Refresh records
+    
     document.getElementById('refresh-records').addEventListener('click', loadRecords);
 
-    // Delete all
+    
     document.getElementById('delete-all').addEventListener('click', async () => {
       if (!confirm('Delete ALL records? This cannot be undone!')) return;
 
@@ -649,7 +647,7 @@
       }
     });
 
-    // Initialize
+    
     initStorageOptions();
   </script>
 </body>

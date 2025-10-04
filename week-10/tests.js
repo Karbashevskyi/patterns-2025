@@ -1,15 +1,5 @@
-/**
- * Week 10: Storage Tests
- * 
- * Test suite that validates both OPFS and IndexedDB implementations
- * follow the same interface and behavior.
- */
-
 import { createStorage, StorageFactory, StorageMigration } from './storage-factory.js';
 
-/**
- * Generic test suite for any IStorage implementation
- */
 class StorageTestSuite {
   constructor(storage, name) {
     this.storage = storage;
@@ -186,9 +176,6 @@ class StorageTestSuite {
   }
 }
 
-/**
- * Test migration between storage implementations
- */
 async function testMigration() {
   console.log('\n' + '='.repeat(60));
   console.log('Testing Storage Migration');
@@ -202,7 +189,6 @@ async function testMigration() {
       return;
     }
 
-    // Create test data in first storage
     const storage1 = await createStorage('migration-test-1', availableTypes[0]);
     await storage1.create({ id: '1', name: 'User 1', email: 'user1@example.com' });
     await storage1.create({ id: '2', name: 'User 2', email: 'user2@example.com' });
@@ -210,7 +196,6 @@ async function testMigration() {
 
     console.log(`✅ Created 3 records in ${availableTypes[0]}`);
 
-    // Migrate to second storage
     const storage2 = await createStorage('migration-test-2', availableTypes[1]);
     const result = await StorageMigration.migrate(storage1, storage2, {
       onProgress: (progress) => {
@@ -220,7 +205,6 @@ async function testMigration() {
 
     console.log(`✅ Migration completed: ${result.success} success, ${result.failed} failed`);
 
-    // Verify migration
     const count1 = await storage1.count();
     const count2 = await storage2.count();
 
@@ -230,7 +214,6 @@ async function testMigration() {
 
     console.log(`✅ Verified: ${count2} records in target storage`);
 
-    // Compare storages
     const comparison = await StorageMigration.compare(storage1, storage2);
     
     if (!comparison.equal) {
@@ -239,7 +222,6 @@ async function testMigration() {
 
     console.log('✅ Storages are identical');
 
-    // Cleanup
     await storage1.deleteAll();
     await storage2.deleteAll();
     await storage1.close();
@@ -251,9 +233,6 @@ async function testMigration() {
   }
 }
 
-/**
- * Run all tests
- */
 async function runAllTests() {
   console.log('\n╔═══════════════════════════════════════════════════════════╗');
   console.log('║          Week 10: Storage-Agnostic Tests                  ║');
@@ -266,7 +245,7 @@ async function runAllTests() {
 
   const allResults = [];
 
-  // Test each available storage type
+  
   for (const type of availableTypes) {
     try {
       const storage = await createStorage(`test-${type}`, type);
@@ -274,7 +253,7 @@ async function runAllTests() {
       const results = await suite.run();
       allResults.push({ type, results });
       
-      // Cleanup
+      
       await storage.deleteAll();
       await storage.close();
     } catch (error) {
@@ -282,10 +261,8 @@ async function runAllTests() {
     }
   }
 
-  // Test migration if multiple storage types available
   await testMigration();
-
-  // Print summary
+  
   console.log('\n' + '='.repeat(60));
   console.log('OVERALL SUMMARY');
   console.log('='.repeat(60));
@@ -315,7 +292,6 @@ async function runAllTests() {
   }
 }
 
-// Run tests
 runAllTests().catch(error => {
   console.error('Test suite failed:', error);
 });
