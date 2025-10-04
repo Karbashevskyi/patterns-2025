@@ -5,10 +5,9 @@ import {
   NotSupportedError,
   escalateError,
   ErrorCollector,
-} from './errors.js';
+} from '../errors.js';
 
 export class FileSystemStorage {
-  // Strategy Pattern: File reading strategies
   #readStrategies = {
     text: async (file) => await file.text(),
     arrayBuffer: async (file) => await file.arrayBuffer(),

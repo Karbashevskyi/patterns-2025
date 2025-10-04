@@ -202,3 +202,181 @@ Both APIs are currently not supported in Firefox or Safari.
 - **Partial failures**: Batch operations can succeed partially
 - **Error recovery**: Collect errors instead of failing fast
 - **Type safety**: Custom errors carry context (path, operation, etc.)
+
+---
+
+## 🧪 Testing (Added)
+
+### Native Node.js Test Runner
+
+Проект використовує **вбудований test runner Node.js v18+** - без залежностей від Jest, Mocha чи інших фреймворків!
+
+### Запуск тестів
+
+```bash
+# Основний unit test (Strategy Pattern + Code Quality)
+npm run test:week-8
+
+# Watch mode - автоматичний перезапуск при змінах
+npm run test:week-8:watch
+
+# З покриттям коду
+npm run test:week-8:coverage
+
+# Або безпосередньо:
+node --test week-8/storage.unit.test.js
+```
+
+### Тестові файли
+
+1. **`storage.unit.test.js`** ✅ (основний)
+   - Unit tests для Strategy Pattern
+   - Validation code quality improvements
+   - Error handling refactoring tests
+   - **16 tests, 100% pass rate**
+   - Не потребує browser APIs
+
+2. **`opfs-storage.test.js`** 🌐 (integration, requires browser)
+   - Integration tests для OPFS
+   - Requires browser environment with OPFS support
+   - ~300 lines, 15+ test suites
+
+3. **`file-system-storage.test.js`** 🌐 (integration, with mocks)
+   - Integration tests для File System Access API
+   - Uses mocks to avoid real file pickers
+   - ~500 lines, 15+ test suites with mock helpers
+
+### Що покривають unit tests
+
+✅ **Strategy Pattern Implementation**
+- Read strategies structure (text, arrayBuffer, blob)
+- Strategy behavior validation
+- Unsupported type detection
+- Consistency between OPFS and File System implementations
+
+✅ **Error Handling Refactoring**
+- Single `escalateError()` call instead of triple
+- Variable storage for escalated errors
+- Performance and readability improvements
+
+✅ **Code Quality**
+- Strategy Pattern vs Switch Statement comparison
+- Extension capability (Open/Closed Principle)
+- Strategy selection logic
+- Single Responsibility Principle
+
+✅ **SOLID Principles**
+- Open/Closed Principle compliance
+- Single Responsibility validation
+
+### Test Output
+
+```
+✅ All unit tests validate Strategy Pattern implementation
+
+▶ Storage Strategy Pattern Tests
+  ✔ OPFSStorage - Strategy Pattern (5 tests)
+  ✔ FileSystemStorage - Strategy Pattern (2 tests)
+  ✔ Error Handling Refactoring (2 tests)
+  ✔ Batch Operations Pattern (1 test)
+  ✔ Strategy Selection Logic (2 tests)
+  ✔ Code Quality Improvements (2 tests)
+  ✔ Single Responsibility Principle (1 test)
+  ✔ Open/Closed Principle (1 test)
+
+ℹ tests 16
+ℹ pass 16
+ℹ fail 0
+ℹ duration_ms ~70
+```
+
+### Чому Native Node.js Test Runner?
+
+**Переваги:**
+- ✅ Вбудований в Node.js 18+ (LTS)
+- ✅ Не потребує `npm install` зовнішніх пакетів
+- ✅ Швидкий запуск і виконання
+- ✅ Watch mode з `--watch` флагом
+- ✅ Coverage з `--experimental-test-coverage`
+- ✅ Syntax близький до Jest/Mocha (`describe`, `it`, `assert`)
+
+**Приклад тесту:**
+
+```javascript
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+
+describe('Strategy Pattern', () => {
+  it('should select correct strategy', () => {
+    const strategies = {
+      text: 'text-handler',
+      arrayBuffer: 'arrayBuffer-handler',
+      blob: 'blob-handler',
+    };
+    
+    assert.strictEqual(strategies['text'], 'text-handler');
+  });
+});
+```
+
+### Рефакторинг: Switch → Strategy Pattern
+
+**До (Switch Statement):**
+
+```javascript
+switch (type) {
+  case 'text':
+    return await file.text();
+  case 'arrayBuffer':
+    return await file.arrayBuffer();
+  case 'blob':
+    return file;
+  default:
+    throw new Error('Unsupported type');
+}
+```
+
+**Після (Strategy Pattern):**
+
+```javascript
+#readStrategies = {
+  text: async (file) => await file.text(),
+  arrayBuffer: async (file) => await file.arrayBuffer(),
+  blob: (file) => file,
+};
+
+const strategy = this.#readStrategies[type];
+if (!strategy) throw new Error(`Unsupported type: ${type}`);
+return await strategy(file);
+```
+
+**Результат:**
+- ✅ Легко додавати нові стратегії (просто додати в об'єкт)
+- ✅ Open/Closed Principle - відкрито для розширення, закрито для модифікації
+- ✅ Кращу читабельність коду
+- ✅ Відокремлення логіки вибору від виконання
+
+### Рефакторинг: Error Handling
+
+**До (Triple escalateError calls):**
+
+```javascript
+throw escalateError(error, params) instanceof WriteError 
+  ? escalateError(error, params) 
+  : new WriteError(escalateError(error, params));
+```
+
+**Після (Single call):**
+
+```javascript
+const escalated = escalateError(error, params);
+throw escalated instanceof WriteError 
+  ? escalated 
+  : new WriteError(escalated);
+```
+
+**Результат:**
+- ✅ Performance boost (3x → 1x виклик функції)
+- ✅ Більш читабельний код
+- ✅ Легше для дебагінгу
+

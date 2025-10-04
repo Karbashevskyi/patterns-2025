@@ -6,7 +6,7 @@ import {
   NotSupportedError,
   escalateError,
   ErrorCollector,
-} from './errors.js';
+} from '../errors.js';
 
 export class OPFSStorage {
   #readStrategies = {
