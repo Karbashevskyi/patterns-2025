@@ -14,7 +14,6 @@ export class InstallManager {
       this.#eventBus.emit('install:available');
     });
 
-    // Коли додаток встановлено
     window.addEventListener('appinstalled', () => {
       this.#prompt = null;
       this.#eventBus.emit('install:completed');

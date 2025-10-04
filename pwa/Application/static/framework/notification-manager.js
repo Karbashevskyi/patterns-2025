@@ -22,7 +22,6 @@ export class NotificationManager {
     return this.#permission === 'granted';
   }
 
-  // Перевірка чи користувач на сторінці
   isPageVisible() {
     return !document.hidden;
   }

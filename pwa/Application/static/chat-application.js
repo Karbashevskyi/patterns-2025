@@ -176,7 +176,6 @@ export class ChatApplication extends AppManager {
       this.#showNotification('Cache update failed', 'error');
     });
 
-    // Інсталяція
     this.eventBus.on('install:available', () => {
       this.#showInstallButton();
       this.#showNotification('App can be installed', 'info');
