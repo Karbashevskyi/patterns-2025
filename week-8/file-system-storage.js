@@ -1,8 +1,3 @@
-/**
- * Week 8: File System Access API Wrapper
- * Handles user-visible file system with error escalation
- */
-
 import {
   PermissionDeniedError,
   ReadError,
@@ -12,36 +7,29 @@ import {
   ErrorCollector,
 } from './errors.js';
 
-/**
- * File System Access API Storage
- * Wrapper for user-selected files and directories
- */
 export class FileSystemStorage {
+  // Strategy Pattern: File reading strategies
+  #readStrategies = {
+    text: async (file) => await file.text(),
+    arrayBuffer: async (file) => await file.arrayBuffer(),
+    blob: (file) => file,
+  };
+
   constructor() {
     this.fileHandle = null;
     this.directoryHandle = null;
   }
 
-  /**
-   * Check if API is supported
-   */
   static isSupported() {
     return 'showOpenFilePicker' in window;
   }
 
-  /**
-   * Ensure API support
-   */
   #ensureSupport() {
     if (!FileSystemStorage.isSupported()) {
       throw new NotSupportedError('File System Access API');
     }
   }
 
-  /**
-   * Pick a file for reading
-   * @param {Object} options - File picker options
-   */
   async pickFile(options = {}) {
     this.#ensureSupport();
 
@@ -50,10 +38,7 @@ export class FileSystemStorage {
       this.fileHandle = fileHandle;
       return fileHandle;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        // User cancelled - this is not really an error
-        return null;
-      }
+      if (error instanceof DOMException && error.name === 'AbortError') return null;
       throw escalateError(error, {
         operation: 'pickFile',
         api: 'showOpenFilePicker',
@@ -61,10 +46,6 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Pick multiple files for reading
-   * @param {Object} options - File picker options
-   */
   async pickFiles(options = {}) {
     this.#ensureSupport();
 
@@ -85,10 +66,6 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Pick a file for saving
-   * @param {Object} options - File picker options
-   */
   async pickFileForSave(options = {}) {
     this.#ensureSupport();
 
@@ -97,9 +74,7 @@ export class FileSystemStorage {
       this.fileHandle = fileHandle;
       return fileHandle;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return null;
-      }
+      if (error instanceof DOMException && error.name === 'AbortError') return null;
       throw escalateError(error, {
         operation: 'pickFileForSave',
         api: 'showSaveFilePicker',
@@ -107,10 +82,6 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Pick a directory
-   * @param {Object} options - Directory picker options
-   */
   async pickDirectory(options = {}) {
     this.#ensureSupport();
 
@@ -119,9 +90,7 @@ export class FileSystemStorage {
       this.directoryHandle = directoryHandle;
       return directoryHandle;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return null;
-      }
+      if (error instanceof DOMException && error.name === 'AbortError') return null;
       throw escalateError(error, {
         operation: 'pickDirectory',
         api: 'showDirectoryPicker',
@@ -129,38 +98,22 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Read file content
-   * @param {FileSystemFileHandle} fileHandle - File handle to read
-   * @param {string} type - Return type: 'text', 'arrayBuffer', 'blob'
-   */
   async readFile(fileHandle, type = 'text') {
     try {
-      // Request permission if needed
       const permission = await fileHandle.queryPermission({ mode: 'read' });
       if (permission !== 'granted') {
         const requested = await fileHandle.requestPermission({ mode: 'read' });
-        if (requested !== 'granted') {
-          throw new PermissionDeniedError('read file');
-        }
+        if (requested !== 'granted') throw new PermissionDeniedError('read file');
       }
 
       const file = await fileHandle.getFile();
 
-      switch (type) {
-        case 'text':
-          return await file.text();
-        case 'arrayBuffer':
-          return await file.arrayBuffer();
-        case 'blob':
-          return file;
-        default:
-          throw new Error(`Unsupported type: ${type}`);
-      }
+      const strategy = this.#readStrategies[type];
+      if (!strategy) throw new Error(`Unsupported type: ${type}`);
+
+      return await strategy(file);
     } catch (error) {
-      if (error instanceof PermissionDeniedError) {
-        throw error;
-      }
+      if (error instanceof PermissionDeniedError) throw error;
       throw new ReadError(fileHandle.name, { cause: escalateError(error, {
         path: fileHandle.name,
         operation: 'read',
@@ -168,20 +121,12 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Write file content
-   * @param {FileSystemFileHandle} fileHandle - File handle to write
-   * @param {string|ArrayBuffer|Blob} data - Data to write
-   */
   async writeFile(fileHandle, data) {
     try {
-      // Request write permission
       const permission = await fileHandle.queryPermission({ mode: 'readwrite' });
       if (permission !== 'granted') {
         const requested = await fileHandle.requestPermission({ mode: 'readwrite' });
-        if (requested !== 'granted') {
-          throw new PermissionDeniedError('write file');
-        }
+        if (requested !== 'granted') throw new PermissionDeniedError('write file');
       }
 
       const writable = await fileHandle.createWritable();
@@ -190,18 +135,15 @@ export class FileSystemStorage {
         await writable.write(data);
         await writable.close();
       } catch (error) {
-        // Try to close on error
         try {
           await writable.close();
         } catch (closeError) {
-          // Ignore close errors
+          console.error('Error closing writable stream:', closeError);
         }
         throw error;
       }
     } catch (error) {
-      if (error instanceof PermissionDeniedError) {
-        throw error;
-      }
+      if (error instanceof PermissionDeniedError) throw error;
       throw new WriteError(fileHandle.name, { cause: escalateError(error, {
         path: fileHandle.name,
         operation: 'write',
@@ -209,11 +151,6 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Read multiple files - demonstrates error aggregation
-   * @param {Array<FileSystemFileHandle>} fileHandles - Array of file handles
-   * @param {string} type - Return type
-   */
   async readFiles(fileHandles, type = 'text') {
     const collector = new ErrorCollector('readFiles');
     const results = {};
@@ -227,7 +164,6 @@ export class FileSystemStorage {
       }
     }
 
-    // Return partial results for read operations
     if (collector.hasErrors()) {
       const summary = collector.summary;
       summary.results = results;
@@ -237,10 +173,6 @@ export class FileSystemStorage {
     return { results, ...collector.summary };
   }
 
-  /**
-   * Write multiple files - demonstrates error aggregation
-   * @param {Array<{handle: FileSystemFileHandle, data: any}>} files
-   */
   async writeFiles(files) {
     const collector = new ErrorCollector('writeFiles');
 
@@ -282,11 +214,6 @@ export class FileSystemStorage {
     }
   }
 
-  /**
-   * Read all files from a directory
-   * @param {FileSystemDirectoryHandle} directoryHandle - Directory handle
-   * @param {string} type - Return type
-   */
   async readDirectory(directoryHandle, type = 'text') {
     const entries = await this.listDirectory(directoryHandle);
     const fileHandles = entries
@@ -296,9 +223,6 @@ export class FileSystemStorage {
     return await this.readFiles(fileHandles, type);
   }
 
-  /**
-   * JSON-specific helpers
-   */
   async readJSON(fileHandle) {
     const text = await this.readFile(fileHandle, 'text');
     try {
@@ -315,17 +239,10 @@ export class FileSystemStorage {
     await this.writeFile(fileHandle, json);
   }
 
-  /**
-   * Verify permission for a file handle
-   * @param {FileSystemFileHandle} fileHandle - File handle
-   * @param {string} mode - Permission mode: 'read' or 'readwrite'
-   */
   async verifyPermission(fileHandle, mode = 'read') {
     try {
       const permission = await fileHandle.queryPermission({ mode });
-      if (permission === 'granted') {
-        return true;
-      }
+      if (permission === 'granted') return true;
 
       const requested = await fileHandle.requestPermission({ mode });
       return requested === 'granted';
@@ -338,9 +255,6 @@ export class FileSystemStorage {
   }
 }
 
-/**
- * Create a new instance
- */
 export function createFileSystemStorage() {
   return new FileSystemStorage();
 }

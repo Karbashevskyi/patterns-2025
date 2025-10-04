@@ -1,8 +1,3 @@
-/**
- * Week 8: OPFS (Origin Private File System) Storage Abstraction
- * Demonstrates error aggregation and escalation
- */
-
 import {
   FileNotFoundError,
   ReadError,
@@ -13,26 +8,23 @@ import {
   ErrorCollector,
 } from './errors.js';
 
-/**
- * OPFS Storage - Abstraction over Origin Private File System
- * Provides a simple key-value store with file operations
- */
 export class OPFSStorage {
+  #readStrategies = {
+    text: async (file) => await file.text(),
+    arrayBuffer: async (file) => await file.arrayBuffer(),
+    blob: (file) => file,
+  };
+
   constructor() {
     this.rootDir = null;
     this.initialized = false;
   }
 
-  /**
-   * Initialize the OPFS storage
-   */
   async init() {
     if (this.initialized) return;
 
     try {
-      if (!navigator.storage?.getDirectory) {
-        throw new TypeError('OPFS not supported');
-      }
+      if (!navigator.storage?.getDirectory) throw new TypeError('OPFS not supported');
 
       this.rootDir = await navigator.storage.getDirectory();
       console.log('OPFS initialized', this.rootDir);
@@ -45,20 +37,12 @@ export class OPFSStorage {
     }
   }
 
-  /**
-   * Ensure initialization before operations
-   */
   async #ensureInit() {
     if (!this.initialized) {
       await this.init();
     }
   }
 
-  /**
-   * Write data to a file
-   * @param {string} path - File path
-   * @param {string|ArrayBuffer|Blob} data - Data to write
-   */
   async writeFile(path, data) {
     await this.#ensureInit();
 
@@ -70,29 +54,24 @@ export class OPFSStorage {
         await writable.write(data);
         await writable.close();
       } catch (error) {
-        // Try to close on error
         try {
           await writable.close();
         } catch (closeError) {
-          // Ignore close errors
+          console.error('Error closing writable stream:', closeError);
         }
         throw error;
       }
     } catch (error) {
-      throw escalateError(error, {
+      const escalated = escalateError(error, {
         path,
         operation: 'write',
-      }) instanceof WriteError 
-        ? escalateError(error, { path, operation: 'write' })
-        : new WriteError(path, { cause: escalateError(error, { path, operation: 'write' }) });
+      });
+
+      if (escalated instanceof WriteError) throw escalated;
+      throw new WriteError(path, { cause: escalated });
     }
   }
 
-  /**
-   * Read data from a file
-   * @param {string} path - File path
-   * @param {string} type - Return type: 'text', 'arrayBuffer', 'blob'
-   */
   async readFile(path, type = 'text') {
     await this.#ensureInit();
 
@@ -100,52 +79,41 @@ export class OPFSStorage {
       const fileHandle = await this.rootDir.getFileHandle(path);
       const file = await fileHandle.getFile();
 
-      switch (type) {
-        case 'text':
-          return await file.text();
-        case 'arrayBuffer':
-          return await file.arrayBuffer();
-        case 'blob':
-          return file;
-        default:
-          throw new Error(`Unsupported type: ${type}`);
-      }
+      const strategy = this.#readStrategies[type];
+      if (!strategy) throw new Error(`Unsupported type: ${type}`);
+
+      return await strategy(file);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Unsupported type')) {
-        throw error;
-      }
-      throw escalateError(error, {
+      if (error instanceof Error && error.message.startsWith('Unsupported type')) throw error;
+      
+      const escalated = escalateError(error, {
         path,
         operation: 'read',
-      }) instanceof ReadError
-        ? escalateError(error, { path, operation: 'read' })
-        : new ReadError(path, { cause: escalateError(error, { path, operation: 'read' }) });
+      });
+      
+
+      if (escalated instanceof ReadError) throw escalated;
+      throw new ReadError(path, { cause: escalated });
+
     }
   }
 
-  /**
-   * Delete a file
-   * @param {string} path - File path
-   */
   async deleteFile(path) {
     await this.#ensureInit();
 
     try {
       await this.rootDir.removeEntry(path);
     } catch (error) {
-      throw escalateError(error, {
+      const escalated = escalateError(error, {
         path,
         operation: 'delete',
-      }) instanceof DeleteError
-        ? escalateError(error, { path, operation: 'delete' })
-        : new DeleteError(path, { cause: escalateError(error, { path, operation: 'delete' }) });
+      });
+
+      if (escalated instanceof DeleteError) throw escalated;
+      throw new DeleteError(path, { cause: escalated });
     }
   }
 
-  /**
-   * Check if file exists
-   * @param {string} path - File path
-   */
   async exists(path) {
     await this.#ensureInit();
 
@@ -153,9 +121,7 @@ export class OPFSStorage {
       await this.rootDir.getFileHandle(path);
       return true;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'NotFoundError') {
-        return false;
-      }
+      if (error instanceof DOMException && error.name === 'NotFoundError') return false;
       throw escalateError(error, {
         path,
         operation: 'exists',
@@ -163,9 +129,6 @@ export class OPFSStorage {
     }
   }
 
-  /**
-   * List all files in the root directory
-   */
   async listFiles() {
     await this.#ensureInit();
 
@@ -184,10 +147,6 @@ export class OPFSStorage {
     }
   }
 
-  /**
-   * Get file metadata
-   * @param {string} path - File path
-   */
   async getMetadata(path) {
     await this.#ensureInit();
 
@@ -202,19 +161,16 @@ export class OPFSStorage {
         lastModified: new Date(file.lastModified),
       };
     } catch (error) {
-      throw escalateError(error, {
+      const escalated = escalateError(error, {
         path,
         operation: 'getMetadata',
-      }) instanceof FileNotFoundError
-        ? escalateError(error, { path, operation: 'getMetadata' })
-        : new ReadError(path, { cause: escalateError(error, { path, operation: 'getMetadata' }) });
+      });
+
+      if (escalated instanceof FileNotFoundError) throw escalated;
+      throw new ReadError(path, { cause: escalated });
     }
   }
 
-  /**
-   * Write multiple files - demonstrates error aggregation
-   * @param {Array<{path: string, data: any}>} files - Array of files to write
-   */
   async writeFiles(files) {
     await this.#ensureInit();
 
@@ -233,10 +189,6 @@ export class OPFSStorage {
     return collector.summary;
   }
 
-  /**
-   * Delete multiple files - demonstrates error aggregation
-   * @param {Array<string>} paths - Array of file paths to delete
-   */
   async deleteFiles(paths) {
     await this.#ensureInit();
 
@@ -255,11 +207,6 @@ export class OPFSStorage {
     return collector.summary;
   }
 
-  /**
-   * Read multiple files - demonstrates error aggregation
-   * @param {Array<string>} paths - Array of file paths to read
-   * @param {string} type - Return type
-   */
   async readFiles(paths, type = 'text') {
     await this.#ensureInit();
 
@@ -275,8 +222,6 @@ export class OPFSStorage {
       }
     }
 
-    // For read operations, we might want to return partial results
-    // instead of throwing immediately
     if (collector.hasErrors()) {
       const summary = collector.summary;
       summary.results = results;
@@ -286,9 +231,6 @@ export class OPFSStorage {
     return { results, ...collector.summary };
   }
 
-  /**
-   * Clear all files in storage
-   */
   async clear() {
     await this.#ensureInit();
 
@@ -298,14 +240,9 @@ export class OPFSStorage {
     return await this.deleteFiles(files);
   }
 
-  /**
-   * Get storage usage estimate
-   */
   async getStorageEstimate() {
     try {
-      if (!navigator.storage?.estimate) {
-        throw new NotSupportedError('StorageManager.estimate');
-      }
+      if (!navigator.storage?.estimate) throw new NotSupportedError('StorageManager.estimate');
 
       const estimate = await navigator.storage.estimate();
       return {
@@ -321,9 +258,6 @@ export class OPFSStorage {
     }
   }
 
-  /**
-   * JSON-specific helpers
-   */
   async writeJSON(path, data) {
     const json = JSON.stringify(data, null, 2);
     await this.writeFile(path, json);
@@ -341,9 +275,6 @@ export class OPFSStorage {
   }
 }
 
-/**
- * Create a singleton instance
- */
 export function createOPFSStorage() {
   return new OPFSStorage();
 }

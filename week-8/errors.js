@@ -1,12 +1,3 @@
-/**
- * Week 8: Domain-Specific Error Classes
- * Demonstrates error escalation using .cause property
- */
-
-/**
- * Base error for all file system operations
- * Escalates low-level errors to domain-specific ones
- */
 export class FileSystemError extends Error {
   constructor(message, options = {}) {
     super(message, options);
@@ -15,9 +6,6 @@ export class FileSystemError extends Error {
   }
 }
 
-/**
- * Error thrown when file/directory not found
- */
 export class FileNotFoundError extends FileSystemError {
   constructor(path, options = {}) {
     super(`File or directory not found: ${path}`, options);
@@ -26,9 +14,6 @@ export class FileNotFoundError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when permission is denied
- */
 export class PermissionDeniedError extends FileSystemError {
   constructor(operation, options = {}) {
     super(`Permission denied for operation: ${operation}`, options);
@@ -36,10 +21,6 @@ export class PermissionDeniedError extends FileSystemError {
     this.operation = operation;
   }
 }
-
-/**
- * Error thrown when quota is exceeded
- */
 export class QuotaExceededError extends FileSystemError {
   constructor(attempted, available, options = {}) {
     super(
@@ -52,9 +33,6 @@ export class QuotaExceededError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when file/directory already exists
- */
 export class FileExistsError extends FileSystemError {
   constructor(path, options = {}) {
     super(`File or directory already exists: ${path}`, options);
@@ -63,9 +41,6 @@ export class FileExistsError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when read operation fails
- */
 export class ReadError extends FileSystemError {
   constructor(path, options = {}) {
     super(`Failed to read file: ${path}`, options);
@@ -74,9 +49,6 @@ export class ReadError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when write operation fails
- */
 export class WriteError extends FileSystemError {
   constructor(path, options = {}) {
     super(`Failed to write file: ${path}`, options);
@@ -85,9 +57,6 @@ export class WriteError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when delete operation fails
- */
 export class DeleteError extends FileSystemError {
   constructor(path, options = {}) {
     super(`Failed to delete file: ${path}`, options);
@@ -96,9 +65,6 @@ export class DeleteError extends FileSystemError {
   }
 }
 
-/**
- * Error thrown when API is not supported
- */
 export class NotSupportedError extends FileSystemError {
   constructor(api, options = {}) {
     super(`API not supported in this environment: ${api}`, options);
@@ -107,10 +73,6 @@ export class NotSupportedError extends FileSystemError {
   }
 }
 
-/**
- * Batch operation error using AggregateError
- * Collects multiple errors from batch operations
- */
 export class BatchOperationError extends AggregateError {
   constructor(errors, operation, options = {}) {
     super(errors, `Batch operation failed: ${operation}`, options);
@@ -137,16 +99,11 @@ export class BatchOperationError extends AggregateError {
   }
 }
 
-/**
- * Escalate low-level DOMException to domain-specific error
- */
 export function escalateError(error, context = {}) {
   if (!error) return new FileSystemError('Unknown error', context);
 
-  // Already a domain error
   if (error instanceof FileSystemError) return error;
 
-  // Map DOMException to domain errors
   if (error instanceof DOMException) {
     switch (error.name) {
       case 'NotFoundError':
@@ -184,7 +141,6 @@ export function escalateError(error, context = {}) {
     }
   }
 
-  // Map TypeError to appropriate domain error
   if (error instanceof TypeError) {
     return new NotSupportedError(
       context.api || 'unknown',
@@ -192,16 +148,12 @@ export function escalateError(error, context = {}) {
     );
   }
 
-  // Generic escalation
   return new FileSystemError(
     error.message || 'Unknown error',
     { cause: error }
   );
 }
 
-/**
- * Collect errors during batch operations
- */
 export class ErrorCollector {
   constructor(operation) {
     this.operation = operation;

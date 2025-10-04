@@ -415,7 +415,6 @@
       return result;
     }
 
-    // OPFS Functions
     window.opfsWrite = async function() {
       clearLog('opfs-output');
       try {
@@ -567,7 +566,6 @@
       }
     };
 
-    // File System Access API Functions
     window.fsPickAndRead = async function() {
       clearLog('fs-output');
       if (!FileSystemStorage.isSupported()) {
@@ -836,7 +834,6 @@
       }
     };
 
-    // Initialize
     opfsList();
   </script>
 </body>
