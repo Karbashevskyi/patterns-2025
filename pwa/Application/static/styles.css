@@ -132,6 +132,30 @@ body {
   background: #4b5563;
 }
 
+.btn.danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn.danger:hover {
+  background: #c82333;
+}
+
+.btn.success {
+  background: #10b981;
+  color: white;
+}
+
+.btn.success:hover {
+  background: #059669;
+}
+
+.btn.error {
+  background: #ef4444;
+  color: white;
+  cursor: not-allowed;
+}
+
 .btn:disabled {
   background: #d1d5db;
   color: #9ca3af;
