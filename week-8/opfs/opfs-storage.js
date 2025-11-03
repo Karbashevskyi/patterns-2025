@@ -104,11 +104,8 @@ export class OPFSStorage {
         path,
         operation: 'read',
       });
-      
 
-      if (escalated instanceof ReadError) throw escalated;
-      throw new ReadError(path, { cause: escalated });
-
+      throw escalated;
     }
   }
 
@@ -123,8 +120,7 @@ export class OPFSStorage {
         operation: 'delete',
       });
 
-      if (escalated instanceof DeleteError) throw escalated;
-      throw new DeleteError(path, { cause: escalated });
+      throw escalated;
     }
   }
 
