@@ -8,11 +8,18 @@ import {
   ErrorCollector,
 } from '../errors.js';
 
+const ANY_STRATEGY_DEFAULT_OPTIONS = { encoding: 'utf-8' };
+
 export class OPFSStorage {
   #readStrategies = {
-    text: async (file) => await file.text(),
-    arrayBuffer: async (file) => await file.arrayBuffer(),
-    blob: (file) => file,
+    text: async (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => {
+      if (!options.encoding) throw new Error('Encoding option is required for text reading');
+      const arrayBuffer = await file.arrayBuffer();
+      const decoder = new TextDecoder(options.encoding);
+      return decoder.decode(arrayBuffer);
+    },
+    arrayBuffer: async (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => await file.arrayBuffer(),
+    blob: (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => file,
   };
 
   constructor() {
@@ -72,7 +79,7 @@ export class OPFSStorage {
     }
   }
 
-  async readFile(path, type = 'text') {
+  async readFile(path, type = 'text', options = ANY_STRATEGY_DEFAULT_OPTIONS) {
     await this.#ensureInit();
 
     try {
@@ -82,7 +89,7 @@ export class OPFSStorage {
       const strategy = this.#readStrategies[type];
       if (!strategy) throw new Error(`Unsupported type: ${type}`);
 
-      return await strategy(file);
+      return await strategy(file, options);
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('Unsupported type')) throw error;
       
@@ -207,7 +214,7 @@ export class OPFSStorage {
     return collector.summary;
   }
 
-  async readFiles(paths, type = 'text') {
+  async readFiles(paths, type = 'text', options = ANY_STRATEGY_DEFAULT_OPTIONS) {
     await this.#ensureInit();
 
     const collector = new ErrorCollector('readFiles');
@@ -215,7 +222,7 @@ export class OPFSStorage {
 
     for (const path of paths) {
       try {
-        results[path] = await this.readFile(path, type);
+        results[path] = await this.readFile(path, type, options);
         collector.addSuccess();
       } catch (error) {
         collector.addError(error, { path, operation: 'read' });
@@ -263,8 +270,8 @@ export class OPFSStorage {
     await this.writeFile(path, json);
   }
 
-  async readJSON(path) {
-    const text = await this.readFile(path, 'text');
+  async readJSON(path, options = ANY_STRATEGY_DEFAULT_OPTIONS) {
+    const text = await this.readFile(path, 'text', options);
     try {
       return JSON.parse(text);
     } catch (error) {
