@@ -22,31 +22,38 @@ export class OPFSStorage {
     blob: (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => file,
   };
 
+  #initPromise = null;
+
   constructor() {
     this.rootDir = null;
-    this.initialized = false;
   }
 
   async init() {
-    if (this.initialized) return;
+    if (this.#initPromise) return this.#initPromise;
 
-    try {
-      if (!navigator.storage?.getDirectory) throw new TypeError('OPFS not supported');
+    this.#initPromise = (async () => {
+      try {
+        if (!navigator.storage?.getDirectory) throw new TypeError('OPFS not supported');
 
-      this.rootDir = await navigator.storage.getDirectory();
-      console.log('OPFS initialized', this.rootDir);
-      this.initialized = true;
-    } catch (error) {
-      throw escalateError(error, {
-        api: 'OPFS',
-        operation: 'initialization',
-      });
-    }
+        this.rootDir = await navigator.storage.getDirectory();
+        console.log('OPFS initialized', this.rootDir);
+      } catch (error) {
+        this.#initPromise = null; // Reset on error to allow retry
+        throw escalateError(error, {
+          api: 'OPFS',
+          operation: 'initialization',
+        });
+      }
+    })();
+
+    return this.#initPromise;
   }
 
   async #ensureInit() {
-    if (!this.initialized) {
+    if (!this.#initPromise) {
       await this.init();
+    } else {
+      await this.#initPromise;
     }
   }
 
