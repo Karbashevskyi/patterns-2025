@@ -238,8 +238,17 @@ export class FileSystemStorage {
   }
 
   async writeJSON(fileHandle, data) {
-    const json = JSON.stringify(data, null, 2);
-    await this.writeFile(fileHandle, json);
+    try {
+      const json = JSON.stringify(data, null, 2);
+      await this.writeFile(fileHandle, json);
+    } catch (error) {
+      throw new WriteError(fileHandle.name, {
+        cause: escalateError(error, {
+          path: fileHandle.name,
+          operation: 'write',
+        }),
+      });
+    }
   }
 
   async verifyPermission(fileHandle, mode = 'read') {
