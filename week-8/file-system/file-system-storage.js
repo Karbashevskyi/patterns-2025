@@ -7,20 +7,28 @@ import {
   ErrorCollector,
 } from '../errors.js';
 
+const ANY_STRATEGY_DEFAULT_OPTIONS = { encoding: 'utf-8' };
+
 export class FileSystemStorage {
   #readStrategies = {
-    text: async (file) => await file.text(),
-    arrayBuffer: async (file) => await file.arrayBuffer(),
-    blob: (file) => file,
+    text: async (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => {
+      if (!options.encoding) throw new Error('Encoding option is required for text reading');
+      const arrayBuffer = await file.arrayBuffer();
+      const decoder = new TextDecoder(options.encoding);
+      return decoder.decode(arrayBuffer);
+    },
+    arrayBuffer: async (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => await file.arrayBuffer(),
+    blob: (file, options = ANY_STRATEGY_DEFAULT_OPTIONS) => file,
   };
 
   constructor() {
+    this.#ensureSupport();
     this.fileHandle = null;
     this.directoryHandle = null;
   }
 
   static isSupported() {
-    return 'showOpenFilePicker' in window;
+    return Object.hasOwn(window, 'showOpenFilePicker');
   }
 
   #ensureSupport() {
@@ -30,7 +38,6 @@ export class FileSystemStorage {
   }
 
   async pickFile(options = {}) {
-    this.#ensureSupport();
 
     try {
       const [fileHandle] = await window.showOpenFilePicker(options);
@@ -46,7 +53,6 @@ export class FileSystemStorage {
   }
 
   async pickFiles(options = {}) {
-    this.#ensureSupport();
 
     try {
       const fileHandles = await window.showOpenFilePicker({
@@ -66,7 +72,6 @@ export class FileSystemStorage {
   }
 
   async pickFileForSave(options = {}) {
-    this.#ensureSupport();
 
     try {
       const fileHandle = await window.showSaveFilePicker(options);
@@ -82,7 +87,6 @@ export class FileSystemStorage {
   }
 
   async pickDirectory(options = {}) {
-    this.#ensureSupport();
 
     try {
       const directoryHandle = await window.showDirectoryPicker(options);
@@ -97,7 +101,7 @@ export class FileSystemStorage {
     }
   }
 
-  async readFile(fileHandle, type = 'text') {
+  async readFile(fileHandle, type = 'text', options = ANY_STRATEGY_DEFAULT_OPTIONS) {
     try {
       const permission = await fileHandle.queryPermission({ mode: 'read' });
       if (permission !== 'granted') {
@@ -110,7 +114,7 @@ export class FileSystemStorage {
       const strategy = this.#readStrategies[type];
       if (!strategy) throw new Error(`Unsupported type: ${type}`);
 
-      return await strategy(file);
+      return await strategy(file, options);
     } catch (error) {
       if (error instanceof PermissionDeniedError) throw error;
       throw new ReadError(fileHandle.name, { cause: escalateError(error, {
@@ -150,13 +154,13 @@ export class FileSystemStorage {
     }
   }
 
-  async readFiles(fileHandles, type = 'text') {
+  async readFiles(fileHandles, type = 'text', options = ANY_STRATEGY_DEFAULT_OPTIONS) {
     const collector = new ErrorCollector('readFiles');
     const results = {};
 
     for (const handle of fileHandles) {
       try {
-        results[handle.name] = await this.readFile(handle, type);
+        results[handle.name] = await this.readFile(handle, type, options);
         collector.addSuccess();
       } catch (error) {
         collector.addError(error, { path: handle.name, operation: 'read' });
@@ -213,17 +217,17 @@ export class FileSystemStorage {
     }
   }
 
-  async readDirectory(directoryHandle, type = 'text') {
+  async readDirectory(directoryHandle, type = 'text', options = ANY_STRATEGY_DEFAULT_OPTIONS) {
     const entries = await this.listDirectory(directoryHandle);
     const fileHandles = entries
       .filter(entry => entry.kind === 'file')
       .map(entry => entry.handle);
 
-    return await this.readFiles(fileHandles, type);
+    return await this.readFiles(fileHandles, type, options);
   }
 
-  async readJSON(fileHandle) {
-    const text = await this.readFile(fileHandle, 'text');
+  async readJSON(fileHandle, options = ANY_STRATEGY_DEFAULT_OPTIONS) {
+    const text = await this.readFile(fileHandle, 'text', options);
     try {
       return JSON.parse(text);
     } catch (error) {
