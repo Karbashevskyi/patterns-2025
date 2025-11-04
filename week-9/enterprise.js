@@ -4,7 +4,6 @@
 
 class AbstractQueryBuilder {
   constructor(executor, validator, optimizer) {
-    super();
     if (this.constructor === AbstractQueryBuilder) {
       throw new Error('Cannot instantiate abstract class');
     }
@@ -118,6 +117,19 @@ class DateDataTypeStrategy extends DataTypeStrategy {
   }
 }
 
+class ArrayDataTypeStrategy extends DataTypeStrategy {
+  format(value) {
+    return `(${value.map(v => {
+      const type = typeof v;
+      if (type === 'string') return `'${v.replace(/'/g, "''")}'`;
+      if (type === 'number') return String(v);
+      if (type === 'boolean') return v ? '1' : '0';
+      if (v instanceof Date) return `'${v.toISOString()}'`;
+      return String(v);
+    }).join(', ')})`;
+  }
+}
+
 class DataTypeStrategyFactory {
   constructor() {
     this.strategies = {
@@ -125,6 +137,7 @@ class DataTypeStrategyFactory {
       number: new NumberDataTypeStrategy(),
       boolean: new BooleanDataTypeStrategy(),
       date: new DateDataTypeStrategy(),
+      array: new ArrayDataTypeStrategy(),
     };
   }
 
@@ -148,6 +161,14 @@ class WhereClauseBuilder extends AbstractClauseBuilder {
     this.dataTypeStrategyFactory = dataTypeStrategyFactory;
   }
 
+  where(field, operator, value) {
+    return this.addCondition(field, operator, value, 'AND');
+  }
+
+  orWhere(field, operator, value) {
+    return this.addCondition(field, operator, value, 'OR');
+  }
+
   addCondition(field, operator, value, logicalOperator = 'AND') {
     const condition = new WhereCondition(
       field,
@@ -157,6 +178,17 @@ class WhereClauseBuilder extends AbstractClauseBuilder {
       this.dataTypeStrategyFactory
     );
     this.conditions.push(condition);
+    return this;
+  }
+
+  addNestedCondition(callback, logicalOperator = 'AND') {
+    const nestedBuilder = new WhereClauseBuilder(this.dataTypeStrategyFactory);
+    callback(nestedBuilder);
+    const nestedGroup = new NestedWhereGroup(
+      nestedBuilder,
+      logicalOperator
+    );
+    this.conditions.push(nestedGroup);
     return this;
   }
 
@@ -177,6 +209,25 @@ class WhereClauseBuilder extends AbstractClauseBuilder {
   }
 }
 
+class NestedWhereGroup {
+  constructor(builder, logicalOperator) {
+    this.builder = builder;
+    this.logicalOperator = logicalOperator;
+  }
+
+  build() {
+    const innerClauses = this.builder.conditions.map((c, i) => {
+      const condition = c.build();
+      if (i === 0) {
+        return condition;
+      }
+      return `${c.logicalOperator} ${condition}`;
+    });
+
+    return `(${innerClauses.join(' ')})`;
+  }
+}
+
 class WhereCondition {
   constructor(field, operator, value, logicalOperator, dataTypeStrategyFactory) {
     this.field = field;
@@ -187,7 +238,12 @@ class WhereCondition {
   }
 
   build() {
-    const type = typeof this.value;
+    let type = typeof this.value;
+    if (Array.isArray(this.value)) {
+      type = 'array';
+    } else if (this.value instanceof Date) {
+      type = 'date';
+    }
     const strategy = this.dataTypeStrategyFactory.getStrategy(type);
     const formattedValue = strategy.format(this.value);
     return `${this.field} ${this.operator} ${formattedValue}`;
@@ -268,6 +324,16 @@ class SelectQueryBuilderImpl extends AbstractQueryBuilder {
 
   orWhere(field, operator, value) {
     this.whereClauseBuilder.addCondition(field, operator, value, 'OR');
+    return this;
+  }
+
+  whereNested(callback, logicalOperator = 'AND') {
+    this.whereClauseBuilder.addNestedCondition(callback, logicalOperator);
+    return this;
+  }
+
+  orWhereNested(callback) {
+    this.whereClauseBuilder.addNestedCondition(callback, 'OR');
     return this;
   }
 
@@ -362,7 +428,6 @@ class OrderByClause {
 
 class QueryExecutorImpl {
   constructor(connectionProvider) {
-    super();
     this.connectionProvider = connectionProvider;
   }
 
@@ -457,6 +522,8 @@ export async function enterpriseExample() {
   const container = setupEnterpriseContainer();
   const factory = container.resolve('queryBuilderFactory');
   
+  // Простий запит
+  console.log('--- Simple Query ---');
   const queryBuilder = factory.createQueryBuilder('SELECT');
   
   const results = await queryBuilder
@@ -469,7 +536,64 @@ export async function enterpriseExample() {
     .execute();
 
   console.log('Results:', results);
-  console.log('\nNotice: Too many layers of abstraction!');
+
+  // Запит з nested conditions
+  console.log('\n--- Nested WHERE Query ---');
+  const queryBuilder2 = factory.createQueryBuilder('SELECT');
+  
+  const query2 = queryBuilder2
+    .select('id', 'name', 'email', 'role')
+    .from('users')
+    .whereNested((nested) => {
+      nested
+        .where('role', '=', 'admin')
+        .orWhere('role', '=', 'moderator');
+    })
+    .where('active', '=', true)
+    .build();
+
+  console.log('Query:', query2);
+  // WHERE (role = 'admin' OR role = 'moderator') AND active = 1
+
+  // Складний запит з множинними nested groups
+  console.log('\n--- Complex Nested Query ---');
+  const queryBuilder3 = factory.createQueryBuilder('SELECT');
+  
+  const query3 = queryBuilder3
+    .select('*')
+    .from('users')
+    .where('status', '=', 'active')
+    .orWhereNested((nested) => {
+      nested
+        .where('age', '>', 18)
+        .where('verified', '=', true);
+    })
+    .orWhereNested((nested) => {
+      nested
+        .where('role', '=', 'admin')
+        .where('department', '=', 'IT');
+    })
+    .build();
+
+  console.log('Query:', query3);
+  // WHERE status = 'active' OR (age > 18 AND verified = 1) OR (role = 'admin' AND department = 'IT')
+
+  // Запит з масивами (IN clause)
+  console.log('\n--- Array/IN Query ---');
+  const queryBuilder4 = factory.createQueryBuilder('SELECT');
+  
+  const query4 = queryBuilder4
+    .select('id', 'name')
+    .from('users')
+    .where('id', 'IN', [1, 2, 3, 4, 5])
+    .where('active', '=', true)
+    .build();
+
+  console.log('Query:', query4);
+  // WHERE id IN (1, 2, 3, 4, 5) AND active = 1
+
+  console.log('\n--- Notice ---');
+  console.log('Too many layers of abstraction!');
   console.log('Files needed: ~15-20 separate files');
   console.log('Lines of code: ~500+ for simple query');
 }

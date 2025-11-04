@@ -71,41 +71,44 @@ class WhereClause {
 // ============================================================================
 
 class QueryBuilder {
-  constructor(executor = null) {
-    this.executor = executor || new QueryExecutor();
-    this._select = [];
-    this._from = null;
-    this._where = new WhereClause();
-    this._joins = [];
-    this._orderBy = [];
-    this._groupBy = [];
-    this._having = new WhereClause();
-    this._limit = null;
-    this._offset = null;
+
+  #select = [];
+  #from = null;
+  #where = new WhereClause();
+  #joins = [];
+  #orderBy = [];
+  #groupBy = [];
+  #having = new WhereClause();
+  #limit = null;
+  #offset = null;
+
+  constructor(executor = new QueryExecutor()) {
+    if (!executor) throw new Error('QueryExecutor instance is required');
+    this.executor = executor;
   }
 
   select(...fields) {
-    this._select.push(...fields);
+    this.#select.push(...fields);
     return this;
   }
 
   from(table) {
-    this._from = table;
+    this.#from = table;
     return this;
   }
 
   where(field, operator, value) {
-    this._where.add(field, operator, value, 'AND');
+    this.#where.add(field, operator, value, 'AND');
     return this;
   }
 
   orWhere(field, operator, value) {
-    this._where.add(field, operator, value, 'OR');
+    this.#where.add(field, operator, value, 'OR');
     return this;
   }
 
   whereRaw(sql) {
-    this._where.addRaw(sql, 'AND');
+    this.#where.addRaw(sql, 'AND');
     return this;
   }
 
@@ -122,17 +125,17 @@ class QueryBuilder {
   }
 
   whereNull(field) {
-    this._where.add(field, 'IS', null, 'AND');
+    this.#where.add(field, 'IS', null, 'AND');
     return this;
   }
 
   whereNotNull(field) {
-    this._where.addRaw(`${field} IS NOT NULL`, 'AND');
+    this.#where.addRaw(`${field} IS NOT NULL`, 'AND');
     return this;
   }
 
   join(table, leftField, operator, rightField, type = 'INNER') {
-    this._joins.push({ table, leftField, operator, rightField, type });
+    this.#joins.push({ table, leftField, operator, rightField, type });
     return this;
   }
 
@@ -145,71 +148,71 @@ class QueryBuilder {
   }
 
   orderBy(field, direction = 'ASC') {
-    this._orderBy.push({ field, direction: direction.toUpperCase() });
+    this.#orderBy.push({ field, direction: direction.toUpperCase() });
     return this;
   }
 
   groupBy(...fields) {
-    this._groupBy.push(...fields);
+    this.#groupBy.push(...fields);
     return this;
   }
 
   having(field, operator, value) {
-    this._having.add(field, operator, value, 'AND');
+    this.#having.add(field, operator, value, 'AND');
     return this;
   }
 
   limit(value) {
-    this._limit = value;
+    this.#limit = value;
     return this;
   }
 
   offset(value) {
-    this._offset = value;
+    this.#offset = value;
     return this;
   }
 
   toSQL() {
-    if (!this._from) {
+    if (!this.#from) {
       throw new Error('FROM clause is required');
     }
 
     const parts = [];
 
-    const selectClause = this._select.length === 0
+    const selectClause = this.#select.length === 0
       ? 'SELECT *'
-      : `SELECT ${this._select.join(', ')}`;
+      : `SELECT ${this.#select.join(', ')}`;
     parts.push(selectClause);
 
-    parts.push(`FROM ${this._from}`);
+    parts.push(`FROM ${this.#from}`);
 
-    this._joins.forEach(join => {
+    this.#joins.forEach(join => {
       parts.push(
         `${join.type} JOIN ${join.table} ON ${join.leftField} ${join.operator} ${join.rightField}`
       );
     });
 
-    const whereClause = this._where.toSQL();
+    const whereClause = this.#where.toSQL();
     if (whereClause) parts.push(whereClause);
 
-    if (this._groupBy.length > 0) {
-      parts.push(`GROUP BY ${this._groupBy.join(', ')}`);
+    if (this.#groupBy.length > 0) {
+      parts.push(`GROUP BY ${this.#groupBy.join(', ')}`);
     }
 
-    const havingClause = this._having.toSQL().replace('WHERE', 'HAVING');
+    const havingClause = this.#having.toSQL().replace('WHERE', 'HAVING');
     if (havingClause) parts.push(havingClause);
 
-    if (this._orderBy.length > 0) {
-      const orders = this._orderBy.map(o => `${o.field} ${o.direction}`);
+    if (this.#orderBy.length > 0) {
+      const orders = this.#orderBy.map(o => `${o.field} ${o.direction}`);
       parts.push(`ORDER BY ${orders.join(', ')}`);
     }
 
-    if (this._limit !== null) {
-      parts.push(`LIMIT ${this._limit}`);
+    if (this.#limit !== null) {
+      parts.push(`LIMIT ${this.#limit}`);
     }
 
-    if (this._offset !== null) {
-      parts.push(`OFFSET ${this._offset}`);
+    if (this.#offset !== null) {
+      parts.push(`OFFSET ${this.#offset}`);
     }
 
     return parts.join(' ');
@@ -236,7 +239,7 @@ class QueryBuilder {
   }
 
   async count() {
-    this._select = ['COUNT(*) as count'];
+    this.#select = ['COUNT(*) as count'];
     const results = await this.execute();
     return results[0]?.count || 0;
   }
@@ -254,10 +257,10 @@ class QueryExecutor {
   async execute(sql) {
     console.log('Balanced: Executing:', sql);
     
-    return this._mockExecute(sql);
+    return this.#mockExecute(sql);
   }
 
-  async _mockExecute(sql) {
+  async #mockExecute(sql) {
     await new Promise(resolve => setTimeout(resolve, 10));
     
     return [
