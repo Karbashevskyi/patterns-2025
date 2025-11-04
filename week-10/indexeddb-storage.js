@@ -1,42 +1,51 @@
 import { IStorage } from './storage-interface.js';
 
 export class IndexedDBStorage extends IStorage {
+  #db = null;
+  #storeName = 'records';
+  #initPromise = null;
+
   constructor(name, version = 1) {
     super();
     this.name = name;
     this.version = version;
-    this.db = null;
-    this.storeName = 'records'; 
   }
 
   async ensureInitialized() {
-    if (this.db) return;
+    if (this.#db) return;
 
-    return new Promise((resolve, reject) => {
+    if (this.#initPromise) {
+      return this.#initPromise;
+    }
+
+    this.#initPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(this.name, this.version);
 
       request.onerror = () => {
+        this.#initPromise = null;
         reject(new Error(`Failed to open IndexedDB: ${request.error}`));
       };
 
       request.onsuccess = () => {
-        this.db = request.result;
+        this.#db = request.result;
         resolve();
       };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
         
-        if (!db.objectStoreNames.contains(this.storeName)) {
-          db.createObjectStore(this.storeName, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(this.#storeName)) {
+          db.createObjectStore(this.#storeName, { keyPath: 'id' });
         }
       };
     });
+
+    return this.#initPromise;
   }
 
   #getStore(mode = 'readonly') {
-    const transaction = this.db.transaction([this.storeName], mode);
-    return transaction.objectStore(this.storeName);
+    const transaction = this.#db.transaction([this.#storeName], mode);
+    return transaction.objectStore(this.#storeName);
   }
 
   #promisifyRequest(request) {
@@ -148,9 +157,9 @@ export class IndexedDBStorage extends IStorage {
   }
 
   async close() {
-    if (this.db) {
-      this.db.close();
-      this.db = null;
+    if (this.#db) {
+      this.#db.close();
+      this.#db = null;
     }
   }
 }

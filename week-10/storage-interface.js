@@ -46,28 +46,27 @@ export class IStorage {
 }
 
 
-export class StorageCapabilities {
-
-  static hasOPFS() {
+export const StorageCapabilities = {
+  hasOPFS() {
     return typeof navigator !== 'undefined' && 
            'storage' in navigator && 
            'getDirectory' in navigator.storage;
-  }
+  },
 
-  static hasIndexedDB() {
+  hasIndexedDB() {
     return typeof indexedDB !== 'undefined';
-  }
+  },
 
-  static getAvailableTypes() {
+  getAvailableTypes() {
     const types = [];
     if (this.hasIndexedDB()) types.push('indexeddb');
     if (this.hasOPFS()) types.push('opfs');
     return types;
-  }
+  },
 
-  static getRecommended() {
+  getRecommended() {
     if (this.hasIndexedDB()) return 'indexeddb';
     if (this.hasOPFS()) return 'opfs';
     return null;
   }
-}
+};
