@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 10: Storage Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Monaco', 'Courier New', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #4ec9b0;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2rem;
+      border: 2px solid #4ec9b0;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .controls {
+      background: #252526;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #3e3e42;
+    }
+
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #1177bb;
+    }
+
+    button:disabled {
+      background: #3e3e42;
+      cursor: not-allowed;
+    }
+
+    .info {
+      background: #252526;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #4ec9b0;
+    }
+
+    .info h3 {
+      color: #4ec9b0;
+      margin-bottom: 10px;
+    }
+
+    .info p {
+      color: #858585;
+      margin: 5px 0;
+    }
+
+    .info .available {
+      color: #4ec9b0;
+      font-weight: bold;
+    }
+
+    .info .unavailable {
+      color: #f48771;
+      font-weight: bold;
+    }
+
+    #output {
+      background: #1e1e1e;
+      border: 1px solid #3e3e42;
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .log-line {
+      margin: 2px 0;
+    }
+
+    .log-header {
+      color: #4ec9b0;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .log-section {
+      color: #569cd6;
+      font-weight: bold;
+    }
+
+    .log-success {
+      color: #4ec9b0;
+    }
+
+    .log-error {
+      color: #f48771;
+    }
+
+    .log-warning {
+      color: #dcdcaa;
+    }
+
+    .log-info {
+      color: #858585;
+    }
+
+    .summary {
+      background: #252526;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border: 2px solid #4ec9b0;
+    }
+
+    .summary h2 {
+      color: #4ec9b0;
+      margin-bottom: 15px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .summary-item {
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #4ec9b0;
+    }
+
+    .summary-item .label {
+      color: #858585;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .summary-item .value {
+      color: #4ec9b0;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .summary-item.failed .value {
+      color: #f48771;
+    }
+
+    .progress {
+      background: #252526;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .progress.active {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #1e1e1e;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0e639c, #4ec9b0);
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Week 10: Storage-Agnostic Tests</h1>
+
+    <div class="info">
+      <h3>Browser Capabilities</h3>
+      <p>IndexedDB: <span id="has-indexeddb"></span></p>
+      <p>OPFS: <span id="has-opfs"></span></p>
+      <p>Recommended: <span id="recommended" style="color: #4ec9b0;"></span></p>
+    </div>
+
+    <div class="controls">
+      <button id="run-tests">▶️ Run All Tests</button>
+      <button id="clear-output">🗑️ Clear Output</button>
+      <button id="clear-storage">💥 Clear All Storage</button>
+    </div>
+
+    <div class="progress" id="progress">
+      <div style="color: #4ec9b0; margin-bottom: 5px;">Running tests...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%">0%</div>
+      </div>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="summary" id="summary" style="display: none;">
+      <h2>Test Summary</h2>
+      <div class="summary-grid" id="summary-content"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createStorage, StorageFactory, StorageMigration } from './storage-factory.js';
+
+    const output = document.getElementById('output');
+    let testResults = {
+      total: 0,
+      passed: 0,
+      failed: 0,
+      byType: {}
+    };
+
+    function log(message, type = 'info') {
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      line.textContent = message;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function logHeader(message) {
+      log('╔' + '═'.repeat(58) + '╗', 'header');
+      log('║' + message.padStart((58 + message.length) / 2).padEnd(58) + '║', 'header');
+      log('╚' + '═'.repeat(58) + '╝', 'header');
+      log('');
+    }
+
+    function logSection(message) {
+      log('');
+      log('='.repeat(60), 'section');
+      log(message, 'section');
+      log('='.repeat(60), 'section');
+      log('');
+    }
+
+    function initCapabilities() {
+      const hasIndexedDB = StorageFactory.isAvailable('indexeddb');
+      const hasOPFS = StorageFactory.isAvailable('opfs');
+      const recommended = StorageFactory.getRecommended();
+
+      document.getElementById('has-indexeddb').textContent = hasIndexedDB ? '✅ Available' : '❌ Not Available';
+      document.getElementById('has-indexeddb').className = hasIndexedDB ? 'available' : 'unavailable';
+
+      document.getElementById('has-opfs').textContent = hasOPFS ? '✅ Available' : '❌ Not Available';
+      document.getElementById('has-opfs').className = hasOPFS ? 'available' : 'unavailable';
+
+      document.getElementById('recommended').textContent = recommended ? recommended.toUpperCase() : 'None';
+    }
+
+    
+    class StorageTestSuite {
+      constructor(storage, name) {
+        this.storage = storage;
+        this.name = name;
+        this.results = {
+          passed: 0,
+          failed: 0,
+          tests: []
+        };
+      }
+
+      async run() {
+        logSection(`Testing ${this.name}`);
+
+        await this.test('should create a new record', async () => {
+          const record = { id: 'test-1', name: 'Test User', email: 'test@example.com' };
+          const id = await this.storage.create(record);
+          if (id !== 'test-1') throw new Error(`Expected id 'test-1', got '${id}'`);
+        });
+
+        await this.test('should read an existing record', async () => {
+          const record = await this.storage.read('test-1');
+          if (!record) throw new Error('Record not found');
+          if (record.name !== 'Test User') throw new Error('Name mismatch');
+          if (record.email !== 'test@example.com') throw new Error('Email mismatch');
+        });
+
+        await this.test('should return null for non-existent record', async () => {
+          const record = await this.storage.read('non-existent');
+          if (record !== null) throw new Error(`Expected null, got ${JSON.stringify(record)}`);
+        });
+
+        await this.test('should update an existing record', async () => {
+          const updated = await this.storage.update('test-1', { name: 'Updated User' });
+          if (updated.name !== 'Updated User') throw new Error('Update failed');
+          if (updated.id !== 'test-1') throw new Error('ID should not change');
+        });
+
+        await this.test('should throw error when updating non-existent record', async () => {
+          try {
+            await this.storage.update('non-existent', { name: 'Test' });
+            throw new Error('Should have thrown error');
+          } catch (error) {
+            if (!error.message.includes('not found')) {
+              throw new Error(`Wrong error: ${error.message}`);
+            }
+          }
+        });
+
+        await this.test('should check if record exists', async () => {
+          const exists = await this.storage.exists('test-1');
+          const notExists = await this.storage.exists('non-existent');
+          if (!exists) throw new Error('test-1 should exist');
+          if (notExists) throw new Error('non-existent should not exist');
+        });
+
+        await this.test('should count records', async () => {
+          await this.storage.create({ id: 'test-2', name: 'User 2' });
+          const count = await this.storage.count();
+          if (count !== 2) throw new Error(`Expected 2 records, got ${count}`);
+        });
+
+        await this.test('should read all records', async () => {
+          const records = await this.storage.readAll();
+          if (records.length !== 2) throw new Error(`Expected 2 records, got ${records.length}`);
+        });
+
+        await this.test('should delete a record', async () => {
+          const deleted = await this.storage.delete('test-2');
+          const count = await this.storage.count();
+          if (!deleted) throw new Error('Delete should return true');
+          if (count !== 1) throw new Error(`Expected 1 record after delete, got ${count}`);
+        });
+
+        await this.test('should return false when deleting non-existent record', async () => {
+          const deleted = await this.storage.delete('non-existent');
+          if (deleted) throw new Error('Should return false for non-existent record');
+        });
+
+        await this.test('should delete all records', async () => {
+          await this.storage.create({ id: 'test-3', name: 'User 3' });
+          await this.storage.create({ id: 'test-4', name: 'User 4' });
+          const deletedCount = await this.storage.deleteAll();
+          const count = await this.storage.count();
+          if (deletedCount !== 3) throw new Error(`Expected to delete 3 records, deleted ${deletedCount}`);
+          if (count !== 0) throw new Error(`Expected 0 records, got ${count}`);
+        });
+
+        await this.test('should throw error when creating duplicate id', async () => {
+          await this.storage.create({ id: 'duplicate', name: 'First' });
+          try {
+            await this.storage.create({ id: 'duplicate', name: 'Second' });
+            throw new Error('Should have thrown error');
+          } catch (error) {
+            if (!error.message.includes('already exists')) {
+              throw new Error(`Wrong error: ${error.message}`);
+            }
+          }
+          await this.storage.delete('duplicate');
+        });
+
+        await this.test('should preserve additional properties', async () => {
+          const record = {
+            id: 'test-props',
+            name: 'Test',
+            email: 'test@example.com',
+            role: 'admin',
+            active: true,
+            metadata: { created: Date.now() }
+          };
+          await this.storage.create(record);
+          const retrieved = await this.storage.read('test-props');
+          if (retrieved.role !== 'admin') throw new Error('Role not preserved');
+          if (retrieved.active !== true) throw new Error('Active flag not preserved');
+          if (!retrieved.metadata) throw new Error('Metadata not preserved');
+          await this.storage.delete('test-props');
+        });
+
+        await this.test('should return correct storage type', () => {
+          const type = this.storage.getType();
+          if (!['opfs', 'indexeddb'].includes(type)) {
+            throw new Error(`Invalid storage type: ${type}`);
+          }
+        });
+
+        this.printResults();
+        return this.results;
+      }
+
+      async test(description, fn) {
+        testResults.total++;
+        try {
+          await fn();
+          this.results.passed++;
+          testResults.passed++;
+          this.results.tests.push({ description, passed: true });
+          log(`✅ ${description}`, 'success');
+        } catch (error) {
+          this.results.failed++;
+          testResults.failed++;
+          this.results.tests.push({ description, passed: false, error: error.message });
+          log(`❌ ${description}`, 'error');
+          log(`   Error: ${error.message}`, 'error');
+        }
+        updateProgress();
+      }
+
+      printResults() {
+        log('');
+        log('-'.repeat(60), 'info');
+        log(`Results for ${this.name}:`, 'info');
+        log(`  Passed: ${this.results.passed}`, 'success');
+        log(`  Failed: ${this.results.failed}`, this.results.failed > 0 ? 'error' : 'success');
+        log(`  Total:  ${this.results.passed + this.results.failed}`, 'info');
+        log('-'.repeat(60), 'info');
+      }
+    }
+
+    
+    async function testMigration() {
+      logSection('Testing Storage Migration');
+
+      try {
+        const availableTypes = StorageFactory.getAvailableTypes();
+        
+        if (availableTypes.length < 2) {
+          log('⚠️  Migration test skipped: Need at least 2 storage types available', 'warning');
+          return;
+        }
+
+        const storage1 = await createStorage('migration-test-1', availableTypes[0]);
+        await storage1.create({ id: '1', name: 'User 1', email: 'user1@example.com' });
+        await storage1.create({ id: '2', name: 'User 2', email: 'user2@example.com' });
+        await storage1.create({ id: '3', name: 'User 3', email: 'user3@example.com' });
+
+        log(`✅ Created 3 records in ${availableTypes[0]}`, 'success');
+
+        const storage2 = await createStorage('migration-test-2', availableTypes[1]);
+        const result = await StorageMigration.migrate(storage1, storage2, {
+          onProgress: (progress) => {
+            log(`   Migrating: ${progress.current}/${progress.total}`, 'info');
+          }
+        });
+
+        log(`✅ Migration completed: ${result.success} success, ${result.failed} failed`, 'success');
+
+        const count2 = await storage2.count();
+        if (count2 !== 3) {
+          throw new Error(`Expected 3 records in target storage, got ${count2}`);
+        }
+
+        log(`✅ Verified: ${count2} records in target storage`, 'success');
+
+        const comparison = await StorageMigration.compare(storage1, storage2);
+        if (!comparison.equal) {
+          throw new Error(`Storages are not equal`);
+        }
+
+        log('✅ Storages are identical', 'success');
+
+        await storage1.deleteAll();
+        await storage2.deleteAll();
+        await storage1.close();
+        await storage2.close();
+
+        log('✅ Migration test passed!', 'success');
+      } catch (error) {
+        log(`❌ Migration test failed: ${error.message}`, 'error');
+      }
+    }
+
+    
+    let totalTests = 0;
+    function updateProgress() {
+      const percent = totalTests > 0 ? Math.round((testResults.total / totalTests) * 100) : 0;
+      const fill = document.getElementById('progress-fill');
+      fill.style.width = percent + '%';
+      fill.textContent = percent + '%';
+    }
+
+    
+    async function runAllTests() {
+      
+      output.innerHTML = '';
+      testResults = { total: 0, passed: 0, failed: 0, byType: {} };
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('progress').classList.add('active');
+      document.getElementById('run-tests').disabled = true;
+
+      logHeader('Week 10: Storage-Agnostic Tests');
+
+      const availableTypes = StorageFactory.getAvailableTypes();
+      log(`Available storage types: ${availableTypes.join(', ')}`, 'info');
+      log(`Recommended: ${StorageFactory.getRecommended()}`, 'info');
+      log('');
+
+      
+      totalTests = availableTypes.length * 14; 
+      updateProgress();
+
+      
+      for (const type of availableTypes) {
+        try {
+          const storage = await createStorage(`test-${type}`, type);
+          const suite = new StorageTestSuite(storage, `${type.toUpperCase()} Storage`);
+          const results = await suite.run();
+          testResults.byType[type] = results;
+          
+          await storage.deleteAll();
+          await storage.close();
+        } catch (error) {
+          log(`❌ Failed to test ${type}: ${error.message}`, 'error');
+        }
+      }
+
+      
+      await testMigration();
+
+      
+      logSection('OVERALL SUMMARY');
+      
+      for (const [type, results] of Object.entries(testResults.byType)) {
+        log(`${type.toUpperCase()}:`, 'section');
+        log(`  ✅ Passed: ${results.passed}`, 'success');
+        log(`  ❌ Failed: ${results.failed}`, results.failed > 0 ? 'error' : 'success');
+        log(`  📊 Success Rate: ${((results.passed / (results.passed + results.failed)) * 100).toFixed(1)}%`, 'info');
+        log('');
+      }
+
+      log('='.repeat(60), 'section');
+      log(`Total Tests: ${testResults.total}`, 'info');
+      log(`Total Passed: ${testResults.passed}`, 'success');
+      log(`Total Failed: ${testResults.failed}`, testResults.failed > 0 ? 'error' : 'success');
+      const successRate = testResults.total > 0 ? ((testResults.passed / testResults.total) * 100).toFixed(1) : 0;
+      log(`Overall Success Rate: ${successRate}%`, 'info');
+      log('='.repeat(60), 'section');
+      log('');
+
+      if (testResults.failed === 0) {
+        log('🎉 All tests passed! Storage implementations are fully compatible!', 'success');
+      } else {
+        log('⚠️  Some tests failed. Review the results above.', 'warning');
+      }
+
+      
+      showSummary();
+      document.getElementById('progress').classList.remove('active');
+      document.getElementById('run-tests').disabled = false;
+    }
+
+    
+    function showSummary() {
+      const summary = document.getElementById('summary');
+      const content = document.getElementById('summary-content');
+      content.innerHTML = '';
+
+      
+      const items = [
+        { label: 'Total Tests', value: testResults.total, failed: false },
+        { label: 'Passed', value: testResults.passed, failed: false },
+        { label: 'Failed', value: testResults.failed, failed: testResults.failed > 0 },
+        { label: 'Success Rate', value: testResults.total > 0 ? `${((testResults.passed / testResults.total) * 100).toFixed(1)}%` : '0%', failed: testResults.failed > 0 }
+      ];
+
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `summary-item ${item.failed ? 'failed' : ''}`;
+        div.innerHTML = `
+          <div class="label">${item.label}</div>
+          <div class="value">${item.value}</div>
+        `;
+        content.appendChild(div);
+      });
+
+      summary.style.display = 'block';
+    }
+
+    
+    document.getElementById('run-tests').addEventListener('click', runAllTests);
+    
+    document.getElementById('clear-output').addEventListener('click', () => {
+      output.innerHTML = '';
+      document.getElementById('summary').style.display = 'none';
+    });
+
+    document.getElementById('clear-storage').addEventListener('click', async () => {
+      if (!confirm('Clear all storage? This will delete all test data!')) return;
+      
+      try {
+        const types = StorageFactory.getAvailableTypes();
+        for (const type of types) {
+          const storage = await createStorage('test-' + type, type);
+          await storage.deleteAll();
+          await storage.close();
+        }
+        log('✅ All storage cleared', 'success');
+      } catch (error) {
+        log(`❌ Failed to clear storage: ${error.message}`, 'error');
+      }
+    });
+
+    
+    initCapabilities();
+  </script>
+</body>
+</html>

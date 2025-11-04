@@ -123,7 +123,7 @@ const DEFAULT_STRATEGIES = {
 };
 
 export class Scheduler extends EventEmitter {
-  constructor(logger, strategies = {}) {
+  constructor(logger, strategies = DEFAULT_STRATEGIES) {
     super();
     this.tasks = new Map();
     this.logger = logger;
