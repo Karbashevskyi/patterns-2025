@@ -399,11 +399,27 @@ class SelectQueryBuilderImpl extends AbstractQueryBuilder {
 
 class JoinClause {
   constructor(table, leftField, operator, rightField, type) {
-    this.table = table;
-    this.leftField = leftField;
-    this.operator = operator;
-    this.rightField = rightField;
+    this.table = this.sanitizeIdentifier(table);
+    this.leftField = this.sanitizeIdentifier(leftField);
+    this.operator = this.validateOperator(operator);
+    this.rightField = this.sanitizeIdentifier(rightField);
     this.type = type;
+  }
+
+  sanitizeIdentifier(identifier) {
+    const cleaned = identifier.replace(/[^a-zA-Z0-9_.]/g, '');
+    if (cleaned !== identifier) {
+      throw new Error(`Invalid identifier: ${identifier}`);
+    }
+    return `\`${cleaned}\``;
+  }
+
+  validateOperator(operator) {
+    const allowedOperators = ['=', '!=', '<>', '<', '>', '<=', '>='];
+    if (!allowedOperators.includes(operator)) {
+      throw new Error(`Invalid operator: ${operator}`);
+    }
+    return operator;
   }
 
   build() {

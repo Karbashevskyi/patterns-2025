@@ -2,110 +2,14 @@
 // ALL-IN-ONE QUERY BUILDER (Mixing everything)
 // ============================================================================
 
-class Query {
-  constructor() {
-    this._select = [];
-    this._from = null;
-    this._where = [];
-    this._joins = [];
-    this._orderBy = [];
-    this._limit = null;
-    this._offset = null;
-    this._groupBy = [];
-    this._having = [];
-  }
-
-  select(...fields) {
-    this._select = fields;
-    return this;
-  }
-
-  from(table) {
-    this._from = table;
-    return this;
-  }
-
-  where(field, operator, value) {
-    // Mixing formatting logic here (bad SoC)
-    const formatted = this.#formatValue(value);
-    this._where.push({ field, operator, value: formatted, logic: 'AND' });
-    return this;
-  }
-
-  orWhere(field, operator, value) {
-    const formatted = this.#formatValue(value);
-    this._where.push({ field, operator, value: formatted, logic: 'OR' });
-    return this;
-  }
-
-  whereRaw(sql) {
-    this._where.push({ raw: sql, logic: 'AND' });
-    return this;
-  }
-
-  join(table, leftField, rightField) {
-    this._joins.push({ type: 'INNER', table, leftField, rightField });
-    return this;
-  }
-
-  leftJoin(table, leftField, rightField) {
-    this._joins.push({ type: 'LEFT', table, leftField, rightField });
-    return this;
-  }
-
-  orderBy(field, direction = 'ASC') {
-    this._orderBy.push({ field, direction });
-    return this;
-  }
-
-  groupBy(...fields) {
-    this._groupBy = fields;
-    return this;
-  }
-
-  having(field, operator, value) {
-    const formatted = this.#formatValue(value);
-    this._having.push({ field, operator, value: formatted });
-    return this;
-  }
-
-  limit(value) {
-    this._limit = value;
-    return this;
-  }
-
-  offset(value) {
-    this._offset = value;
-    return this;
-  }
-
-  whereId(id) {
-    return this.where('id', '=', id);
-  }
-
-  whereIn(field, values) {
-    const formatted = values.map(v => this.#formatValue(v)).join(', ');
-    this._where.push({ field, operator: 'IN', value: `(${formatted})`, logic: 'AND' });
-    return this;
-  }
-
-  whereLike(field, pattern) {
-    return this.where(field, 'LIKE', pattern);
-  }
-
-  whereNull(field) {
-    this._where.push({ field, operator: 'IS', value: 'NULL', logic: 'AND' });
-    return this;
-  }
-
-  whereNotNull(field) {
-    this._where.push({ field, operator: 'IS NOT', value: 'NULL', logic: 'AND' });
-    return this;
-  }
-
-  #formatValue(value) {
+class ValueFormatter {
+  format(value) {
     if (value === null || value === undefined) {
       return 'NULL';
+    }
+    if (Array.isArray(value)) {
+      const formatted = value.map(v => this.format(v)).join(', ');
+      return `(${formatted})`;
     }
     if (typeof value === 'string') {
       return `'${value.replace(/'/g, "''")}'`;
@@ -118,29 +22,129 @@ class Query {
     }
     return String(value);
   }
+}
+
+class Query {
+  #select = [];
+  #from = null;
+  #where = [];
+  #joins = [];
+  #orderBy = [];
+  #limit = null;
+  #offset = null;
+  #groupBy = [];
+  #having = [];
+  #formatter = new ValueFormatter();
+
+  select(...fields) {
+    this.#select = fields;
+    return this;
+  }
+
+  from(table) {
+    this.#from = table;
+    return this;
+  }
+
+  where(field, operator, value) {
+    const formatted = this.#formatter.format(value);
+    this.#where.push({ field, operator, value: formatted, logic: 'AND' });
+    return this;
+  }
+
+  orWhere(field, operator, value) {
+    const formatted = this.#formatter.format(value);
+    this.#where.push({ field, operator, value: formatted, logic: 'OR' });
+    return this;
+  }
+
+  whereRaw(sql) {
+    this.#where.push({ raw: sql, logic: 'AND' });
+    return this;
+  }
+
+  join(table, leftField, rightField) {
+    this.#joins.push({ type: 'INNER', table, leftField, rightField });
+    return this;
+  }
+
+  leftJoin(table, leftField, rightField) {
+    this.#joins.push({ type: 'LEFT', table, leftField, rightField });
+    return this;
+  }
+
+  orderBy(field, direction = 'ASC') {
+    this.#orderBy.push({ field, direction });
+    return this;
+  }
+
+  groupBy(...fields) {
+    this.#groupBy = fields;
+    return this;
+  }
+
+  having(field, operator, value) {
+    const formatted = this.#formatter.format(value);
+    this.#having.push({ field, operator, value: formatted });
+    return this;
+  }
+
+  limit(value) {
+    this.#limit = value;
+    return this;
+  }
+
+  offset(value) {
+    this.#offset = value;
+    return this;
+  }
+
+  whereId(id) {
+    return this.where('id', '=', id);
+  }
+
+  whereIn(field, values) {
+    const formatted = values.map(v => this.#formatter.format(v)).join(', ');
+    this.#where.push({ field, operator: 'IN', value: `(${formatted})`, logic: 'AND' });
+    return this;
+  }
+
+  whereLike(field, pattern) {
+    return this.where(field, 'LIKE', pattern);
+  }
+
+  whereNull(field) {
+    this.#where.push({ field, operator: 'IS', value: 'NULL', logic: 'AND' });
+    return this;
+  }
+
+  whereNotNull(field) {
+    this.#where.push({ field, operator: 'IS NOT', value: 'NULL', logic: 'AND' });
+    return this;
+  }
 
   toSQL() {
     const parts = [];
 
-    if (this._select.length === 0) {
+    if (this.#select.length === 0) {
       parts.push('SELECT *');
     } else {
-      parts.push(`SELECT ${this._select.join(', ')}`);
+      parts.push(`SELECT ${this.#select.join(', ')}`);
     }
 
-    if (!this._from) {
+    if (!this.#from) {
       throw new Error('FROM clause is required');
     }
-    parts.push(`FROM ${this._from}`);
+    parts.push(`FROM ${this.#from}`);
 
-    if (this._joins.length > 0) {
-      this._joins.forEach(j => {
+    if (this.#joins.length > 0) {
+      this.#joins.forEach(j => {
         parts.push(`${j.type} JOIN ${j.table} ON ${j.leftField} = ${j.rightField}`);
       });
     }
 
-    if (this._where.length > 0) {
-      const conditions = this._where.map((w, i) => {
+    if (this.#where.length > 0) {
+      const conditions = this.#where.map((w, i) => {
         if (w.raw) {
           return i === 0 ? w.raw : `${w.logic} ${w.raw}`;
         }
@@ -150,37 +154,36 @@ class Query {
       parts.push(`WHERE ${conditions.join(' ')}`);
     }
 
-    if (this._groupBy.length > 0) {
-      parts.push(`GROUP BY ${this._groupBy.join(', ')}`);
+    if (this.#groupBy.length > 0) {
+      parts.push(`GROUP BY ${this.#groupBy.join(', ')}`);
     }
 
-    if (this._having.length > 0) {
-      const conditions = this._having.map(h => `${h.field} ${h.operator} ${h.value}`);
+    if (this.#having.length > 0) {
+      const conditions = this.#having.map(h => `${h.field} ${h.operator} ${h.value}`);
       parts.push(`HAVING ${conditions.join(' AND ')}`);
     }
 
-    if (this._orderBy.length > 0) {
-      const orders = this._orderBy.map(o => `${o.field} ${o.direction}`);
+    if (this.#orderBy.length > 0) {
+      const orders = this.#orderBy.map(o => `${o.field} ${o.direction}`);
       parts.push(`ORDER BY ${orders.join(', ')}`);
     }
 
-    if (this._limit !== null) {
-      parts.push(`LIMIT ${this._limit}`);
+    if (this.#limit !== null) {
+      parts.push(`LIMIT ${this.#limit}`);
     }
 
-    if (this._offset !== null) {
-      parts.push(`OFFSET ${this._offset}`);
+    if (this.#offset !== null) {
+      parts.push(`OFFSET ${this.#offset}`);
     }
 
     return parts.join(' ');
   }
 
-  // Execute - mixing query execution with query building (bad SRP)
   async execute() {
     const sql = this.toSQL();
     console.log('Pragmatic: Executing:', sql);
 
-    return this._mockExecute(sql);
+    return this.#mockExecute(sql);
   }
 
   async first() {
@@ -193,7 +196,7 @@ class Query {
     return await this.execute();
   }
 
-  async _mockExecute(sql) {
+  async #mockExecute(sql) {
     await new Promise(resolve => setTimeout(resolve, 10));
     
     return [
@@ -213,7 +216,7 @@ class Query {
   }
 
   async count() {
-    this._select = ['COUNT(*) as count'];
+    this.#select = ['COUNT(*) as count'];
     const results = await this.execute();
     return results[0]?.count || 0;
   }
@@ -254,7 +257,6 @@ class Table {
     this.primaryKey = null;
   }
 
-  // Column definitions (mixing types, constraints, and formatting)
   id() {
     this.columns.push({ name: 'id', type: 'INTEGER', primaryKey: true, autoIncrement: true });
     this.primaryKey = 'id';
@@ -363,7 +365,6 @@ function schema() {
 export async function pragmaticExample() {
   console.log('\n=== PRAGMATIC APPROACH ===\n');
 
-  // Schema definition - VERY expressive!
   const db = schema()
     .table('users', t => {
       t.id();
