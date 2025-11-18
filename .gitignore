@@ -4,3 +4,4 @@ node_modules
 
 pwa/node_modules
 pwa/*.log
+pwa/ssl/certs/
