@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Progressive Web Application with offline support and real-time communication" />
+  <meta name="theme-color" content="#2196F3" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PWA Example" />
+  <title>PWA - Progressive Web Application</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>PWA Example</h1>
+      <div class="status-indicators">
+        <div id="connection-status" class="status-indicator offline">Offline</div>
+        <div id="install-status" class="status-indicator hidden">Install Available</div>
+      </div>
+    </header>
+    <main class="app-main">
+      <div class="controls">
+        <button id="install-btn" class="btn primary hidden">Install App</button>
+        <button id="enable-notifications-btn" class="btn primary">Enable Notifications</button>
+        <button id="send-message-btn" class="btn">Send Message</button>
+        <button id="update-cache-btn" class="btn secondary">Update Cache</button>
+        <button id="reset-app-btn" class="btn danger">Reset App</button>
+        <button id="clear-btn" class="btn secondary">Clear Log</button>
+      </div>
+      <div class="message-input">
+        <input type="text" id="message-input" placeholder="Enter your message..." />
+        <button id="send-btn" class="btn primary">Send</button>
+      </div>
+      <div class="output-container">
+        <h3>Activity Log</h3>
+        <pre id="output"></pre>
+      </div>
+    </main>
+    <div id="notification" class="notification hidden"></div>
+  </div>
+  <script type="module" src="./application.js"></script>
+</body>
+</html>
