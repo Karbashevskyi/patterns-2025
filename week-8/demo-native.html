@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week 8: File System API Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      color: #34495e;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    button.danger {
+      background: #e74c3c;
+    }
+
+    button.danger:hover {
+      background: #c0392b;
+    }
+
+    button.success {
+      background: #27ae60;
+    }
+
+    button.success:hover {
+      background: #229954;
+    }
+
+    .output {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .error {
+      color: #e74c3c;
+    }
+
+    .success {
+      color: #27ae60;
+    }
+
+    .warning {
+      color: #f39c12;
+    }
+
+    .info {
+      color: #3498db;
+    }
+
+    .input-group {
+      margin: 15px 0;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 100px;
+      font-family: 'Courier New', monospace;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #95a5a6;
+      color: white;
+      border-radius: 3px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    .badge.supported {
+      background: #27ae60;
+    }
+
+    .badge.not-supported {
+      background: #e74c3c;
+    }
+
+    .file-list {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .file-list li {
+      padding: 8px;
+      background: #ecf0f1;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .file-list button {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .stat-card {
+      padding: 15px;
+      background: #ecf0f1;
+      border-radius: 4px;
+      border-left: 4px solid #3498db;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #7f8c8d;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Week 8: File System API Demo</h1>
+    <p class="subtitle">Error Handling with Escalation and Aggregation</p>
+
+    <!-- API Support Status -->
+    <div class="section">
+      <h2>API Support Status</h2>
+      <div id="api-support"></div>
+    </div>
+
+    <!-- OPFS Storage -->
+    <div class="section">
+      <h2>OPFS Storage <span class="badge" id="opfs-badge">Checking...</span></h2>
+      <p>Origin Private File System - browser-private storage</p>
+
+      <div class="input-group">
+        <label for="opfs-filename">Filename:</label>
+        <input type="text" id="opfs-filename" value="test.txt" placeholder="Enter filename">
+      </div>
+
+      <div class="input-group">
+        <label for="opfs-content">Content:</label>
+        <textarea id="opfs-content" placeholder="Enter file content">Hello from OPFS!</textarea>
+      </div>
+
+      <div class="button-group">
+        <button onclick="opfsWrite()">Write File</button>
+        <button onclick="opfsRead()">Read File</button>
+        <button onclick="opfsDelete()">Delete File</button>
+        <button onclick="opfsList()">List Files</button>
+        <button onclick="opfsWriteJSON()">Write JSON</button>
+        <button onclick="opfsReadJSON()">Read JSON</button>
+        <button class="success" onclick="opfsBatchWrite()">Batch Write (5 files)</button>
+        <button class="danger" onclick="opfsClear()">Clear All</button>
+      </div>
+
+      <div class="stats" id="opfs-stats" style="display: none;"></div>
+
+      <div id="opfs-files"></div>
+      <div id="opfs-output" class="output"></div>
+    </div>
+
+    <!-- File System Access API -->
+    <div class="section">
+      <h2>File System Access API <span class="badge" id="fs-badge">Checking...</span></h2>
+      <p>User-selectable files from the file system</p>
+
+      <div class="button-group">
+        <button id="fs-btn-1" onclick="fsPickAndRead()">Pick & Read File</button>
+        <button id="fs-btn-2" onclick="fsPickAndReadMultiple()">Pick & Read Multiple</button>
+        <button id="fs-btn-3" onclick="fsPickAndWrite()">Pick & Write File</button>
+        <button id="fs-btn-4" onclick="fsPickDirectory()">Pick Directory & List</button>
+        <button id="fs-btn-5" onclick="fsReadJSON()">Pick & Read JSON</button>
+        <button id="fs-btn-6" onclick="fsWriteJSON()">Pick & Write JSON</button>
+      </div>
+
+      <div id="fs-not-supported" style="display: none; padding: 15px; background: #fff3cd; border-left: 4px solid #f39c12; border-radius: 4px; margin: 15px 0;">
+        <strong>⚠️ File System Access API Not Supported</strong>
+        <p style="margin: 10px 0 0 0; color: #856404;">
+          This API is currently only supported in Chrome/Edge 86+ and Opera 72+.<br>
+          Please use one of these browsers to test File System Access API features.<br>
+          <em>Note: OPFS features below still work in supported browsers!</em>
+        </p>
+      </div>
+
+      <div id="fs-output" class="output"></div>
+    </div>
+
+    <!-- Error Demonstrations -->
+    <div class="section">
+      <h2>Error Handling Demonstrations</h2>
+      <p>Demonstrates error escalation and aggregation</p>
+
+      <div class="button-group">
+        <button onclick="demoErrorEscalation()">Demo: Error Escalation</button>
+        <button onclick="demoErrorAggregation()">Demo: Error Aggregation</button>
+        <button onclick="demoNestedErrors()">Demo: Nested Error Chains</button>
+        <button onclick="demoPartialSuccess()">Demo: Partial Success</button>
+      </div>
+
+      <div id="error-output" class="output"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { OPFSStorage } from './opfs-storage.js';
+    import { FileSystemStorage } from './file-system-storage.js';
+    import * as Errors from './errors.js';
+
+    // Make available globally
+    window.opfsStorage = new OPFSStorage();
+    window.fsStorage = new FileSystemStorage();
+    window.Errors = Errors;
+
+    // Check API support
+    checkAPISupport();
+
+    async function checkAPISupport() {
+      const opfsSupported = 'storage' in navigator && 'getDirectory' in navigator.storage;
+      const fsSupported = FileSystemStorage.isSupported();
+
+      document.getElementById('opfs-badge').textContent = opfsSupported ? 'Supported' : 'Not Supported';
+      document.getElementById('opfs-badge').className = opfsSupported ? 'badge supported' : 'badge not-supported';
+
+      document.getElementById('fs-badge').textContent = fsSupported ? 'Supported' : 'Not Supported';
+      document.getElementById('fs-badge').className = fsSupported ? 'badge supported' : 'badge not-supported';
+
+      // Disable File System Access API buttons if not supported
+      if (!fsSupported) {
+        const fsButtons = document.querySelectorAll('[id^="fs-btn-"]');
+        fsButtons.forEach(btn => {
+          btn.disabled = true;
+          btn.title = 'File System Access API not supported in this browser';
+        });
+        document.getElementById('fs-not-supported').style.display = 'block';
+      }
+
+      const supportHtml = `
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-value">${opfsSupported ? '✓' : '✗'}</div>
+            <div class="stat-label">OPFS Support</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${fsSupported ? '✓' : '✗'}</div>
+            <div class="stat-label">File System Access API</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('api-support').innerHTML = supportHtml;
+
+      if (opfsSupported) {
+        await updateOPFSStats();
+      }
+    }
+
+    async function updateOPFSStats() {
+      try {
+        const estimate = await window.opfsStorage.getStorageEstimate();
+        const files = await window.opfsStorage.listFiles();
+        
+        const statsHtml = `
+          <div class="stat-card">
+            <div class="stat-value">${files.length}</div>
+            <div class="stat-label">Files</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${formatBytes(estimate.usage)}</div>
+            <div class="stat-label">Used</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${formatBytes(estimate.quota)}</div>
+            <div class="stat-label">Quota</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${estimate.percentUsed}%</div>
+            <div class="stat-label">Usage</div>
+          </div>
+        `;
+        document.getElementById('opfs-stats').innerHTML = statsHtml;
+        document.getElementById('opfs-stats').style.display = 'grid';
+      } catch (error) {
+        console.error('Failed to update stats:', error);
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    function log(element, message, type = 'info') {
+      const output = document.getElementById(element);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type;
+      output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearLog(element) {
+      document.getElementById(element).innerHTML = '';
+    }
+
+    function formatError(error) {
+      let result = `${error.name}: ${error.message}`;
+      if (error.cause) {
+        result += `\n  ↳ Caused by: ${formatError(error.cause)}`;
+      }
+      if (error.errors) {
+        result += `\n  ↳ Aggregated errors (${error.errors.length}):`;
+        error.errors.forEach((err, i) => {
+          result += `\n    ${i + 1}. ${formatError(err)}`;
+        });
+      }
+      return result;
+    }
+
+    window.opfsWrite = async function() {
+      clearLog('opfs-output');
+      try {
+        const filename = document.getElementById('opfs-filename').value;
+        const content = document.getElementById('opfs-content').value;
+        
+        await window.opfsStorage.writeFile(filename, content);
+        log('opfs-output', `✓ File written: opfs://${window.location.origin}/${filename}`, 'success');
+        await updateOPFSStats();
+        await opfsList();
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsRead = async function() {
+      clearLog('opfs-output');
+      try {
+        const filename = document.getElementById('opfs-filename').value;
+        const content = await window.opfsStorage.readFile(filename);
+        
+        log('opfs-output', `✓ File read: ${filename}`, 'success');
+        log('opfs-output', `Content: ${content}`, 'info');
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsDelete = async function() {
+      clearLog('opfs-output');
+      try {
+        const filename = document.getElementById('opfs-filename').value;
+        await window.opfsStorage.deleteFile(filename);
+        
+        log('opfs-output', `✓ File deleted: ${filename}`, 'success');
+        await updateOPFSStats();
+        await opfsList();
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsList = async function() {
+      try {
+        const files = await window.opfsStorage.listFiles();
+        const filesDiv = document.getElementById('opfs-files');
+        
+        if (files.length === 0) {
+          filesDiv.innerHTML = '<p style="color: #7f8c8d; margin-top: 10px;">No files in storage</p>';
+          return;
+        }
+
+        let html = '<ul class="file-list">';
+        for (const filename of files) {
+          const metadata = await window.opfsStorage.getMetadata(filename);
+          html += `
+            <li>
+              <span>
+                <strong>${filename}</strong>
+                <small style="color: #7f8c8d; margin-left: 10px;">
+                  ${formatBytes(metadata.size)} • ${metadata.lastModified.toLocaleString()}
+                </small>
+              </span>
+              <button onclick="viewFile('${filename}')">View</button>
+            </li>
+          `;
+        }
+        html += '</ul>';
+        filesDiv.innerHTML = html;
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.viewFile = async function(filename) {
+      clearLog('opfs-output');
+      try {
+        const content = await window.opfsStorage.readFile(filename);
+        log('opfs-output', `File: ${filename}`, 'info');
+        log('opfs-output', content, 'success');
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsWriteJSON = async function() {
+      clearLog('opfs-output');
+      try {
+        const data = {
+          timestamp: new Date().toISOString(),
+          message: 'Hello from JSON!',
+          nested: { value: 42 }
+        };
+        
+        await window.opfsStorage.writeJSON('data.json', data);
+        log('opfs-output', `✓ JSON written: opfs://${window.location.origin}/data.json`, 'success');
+        log('opfs-output', JSON.stringify(data, null, 2), 'info');
+        await updateOPFSStats();
+        await opfsList();
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsReadJSON = async function() {
+      clearLog('opfs-output');
+      try {
+        const data = await window.opfsStorage.readJSON('data.json');
+        log('opfs-output', `✓ JSON read: data.json`, 'success');
+        log('opfs-output', JSON.stringify(data, null, 2), 'info');
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsBatchWrite = async function() {
+      clearLog('opfs-output');
+      try {
+        const files = [
+          { path: 'batch1.txt', data: 'First file' },
+          { path: 'batch2.txt', data: 'Second file' },
+          { path: 'batch3.txt', data: 'Third file' },
+          { path: 'batch4.txt', data: 'Fourth file' },
+          { path: 'batch5.txt', data: 'Fifth file' },
+        ];
+
+        const result = await window.opfsStorage.writeFiles(files);
+        log('opfs-output', `✓ Batch write completed`, 'success');
+        log('opfs-output', `Total: ${result.total}, Succeeded: ${result.succeeded}, Failed: ${result.failed}`, 'info');
+        await updateOPFSStats();
+        await opfsList();
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.opfsClear = async function() {
+      if (!confirm('Are you sure you want to delete all files?')) return;
+      
+      clearLog('opfs-output');
+      try {
+        const result = await window.opfsStorage.clear();
+        log('opfs-output', `✓ Storage cleared`, 'success');
+        log('opfs-output', `Deleted: ${result.succeeded} files`, 'info');
+        await updateOPFSStats();
+        await opfsList();
+      } catch (error) {
+        log('opfs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsPickAndRead = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handle = await window.fsStorage.pickFile();
+        if (!handle) {
+          log('fs-output', 'File selection cancelled', 'warning');
+          return;
+        }
+
+        const content = await window.fsStorage.readFile(handle);
+        log('fs-output', `✓ File read: ${handle.name}`, 'success');
+        log('fs-output', content.substring(0, 500), 'info');
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsPickAndReadMultiple = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handles = await window.fsStorage.pickFiles();
+        if (handles.length === 0) {
+          log('fs-output', 'File selection cancelled', 'warning');
+          return;
+        }
+
+        const result = await window.fsStorage.readFiles(handles);
+        
+        if (result.failed > 0) {
+          log('fs-output', `⚠ Partial success: ${result.succeeded}/${result.total} files read`, 'warning');
+          result.errors.forEach(err => {
+            log('fs-output', `  ✗ ${formatError(err)}`, 'error');
+          });
+        } else {
+          log('fs-output', `✓ All ${result.succeeded} files read successfully`, 'success');
+        }
+
+        for (const [name, content] of Object.entries(result.results)) {
+          log('fs-output', `\n${name}:`, 'info');
+          log('fs-output', content.substring(0, 200), 'info');
+        }
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsPickAndWrite = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handle = await window.fsStorage.pickFileForSave({
+          suggestedName: 'output.txt',
+        });
+        
+        if (!handle) {
+          log('fs-output', 'File selection cancelled', 'warning');
+          return;
+        }
+
+        const content = `Written at ${new Date().toISOString()}\nHello from File System Access API!`;
+        await window.fsStorage.writeFile(handle, content);
+        
+        log('fs-output', `✓ File written: file://[user-selected]/${handle.name}`, 'success');
+        log('fs-output', `  Location: User's file system`, 'info');
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsPickDirectory = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handle = await window.fsStorage.pickDirectory();
+        if (!handle) {
+          log('fs-output', 'Directory selection cancelled', 'warning');
+          return;
+        }
+
+        const entries = await window.fsStorage.listDirectory(handle);
+        log('fs-output', `✓ Directory: ${handle.name}`, 'success');
+        log('fs-output', `Found ${entries.length} entries:`, 'info');
+        
+        entries.forEach(entry => {
+          const icon = entry.kind === 'directory' ? '📁' : '📄';
+          log('fs-output', `  ${icon} ${entry.name}`, 'info');
+        });
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsReadJSON = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handle = await window.fsStorage.pickFile({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+
+        if (!handle) {
+          log('fs-output', 'File selection cancelled', 'warning');
+          return;
+        }
+
+        const data = await window.fsStorage.readJSON(handle);
+        log('fs-output', `✓ JSON read: ${handle.name}`, 'success');
+        log('fs-output', JSON.stringify(data, null, 2), 'info');
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    window.fsWriteJSON = async function() {
+      clearLog('fs-output');
+      if (!FileSystemStorage.isSupported()) {
+        log('fs-output', '✗ File System Access API is not supported in this browser', 'error');
+        log('fs-output', 'Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+      
+      try {
+        const handle = await window.fsStorage.pickFileForSave({
+          suggestedName: 'data.json',
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+
+        if (!handle) {
+          log('fs-output', 'File selection cancelled', 'warning');
+          return;
+        }
+
+        const data = {
+          timestamp: new Date().toISOString(),
+          message: 'Created via File System Access API',
+          data: { value: 42 }
+        };
+
+        await window.fsStorage.writeJSON(handle, data);
+        log('fs-output', `✓ JSON written: file://[user-selected]/${handle.name}`, 'success');
+        log('fs-output', `  Location: User's file system`, 'info');
+        log('fs-output', JSON.stringify(data, null, 2), 'info');
+      } catch (error) {
+        log('fs-output', `✗ ${formatError(error)}`, 'error');
+      }
+    };
+
+    // Error Demonstrations
+    window.demoErrorEscalation = async function() {
+      clearLog('error-output');
+      log('error-output', '=== Error Escalation Demo ===', 'info');
+      log('error-output', 'Reading non-existent file to show error escalation chain:\n', 'info');
+      
+      try {
+        await window.opfsStorage.readFile('nonexistent.txt');
+      } catch (error) {
+        log('error-output', formatError(error), 'error');
+        log('error-output', '\n✓ Notice how the low-level DOMException is escalated to domain-specific ReadError', 'success');
+      }
+    };
+
+    window.demoErrorAggregation = async function() {
+      clearLog('error-output');
+      log('error-output', '=== Error Aggregation Demo ===', 'info');
+      log('error-output', 'Attempting to delete multiple files (some exist, some don\'t):\n', 'info');
+      
+      try {
+        // Create some files first
+        await window.opfsStorage.writeFile('exists1.txt', 'data');
+        await window.opfsStorage.writeFile('exists2.txt', 'data');
+        
+        // Try to delete both existing and non-existing files
+        await window.opfsStorage.deleteFiles([
+          'exists1.txt',
+          'nonexistent1.txt',
+          'exists2.txt',
+          'nonexistent2.txt'
+        ]);
+      } catch (error) {
+        log('error-output', formatError(error), 'error');
+        log('error-output', '\n✓ AggregateError collects all failures while reporting successes', 'success');
+        await updateOPFSStats();
+      }
+    };
+
+    window.demoNestedErrors = async function() {
+      clearLog('error-output');
+      log('error-output', '=== Nested Error Chain Demo ===', 'info');
+      log('error-output', 'Reading invalid JSON to show nested error chains:\n', 'info');
+      
+      try {
+        await window.opfsStorage.writeFile('invalid.json', 'not valid JSON {}}');
+        await window.opfsStorage.readJSON('invalid.json');
+      } catch (error) {
+        log('error-output', formatError(error), 'error');
+        log('error-output', '\n✓ Error chain shows: ReadError → Error(Invalid JSON) → SyntaxError', 'success');
+      }
+    };
+
+    window.demoPartialSuccess = async function() {
+      clearLog('error-output');
+      log('error-output', '=== Partial Success Demo ===', 'info');
+      log('error-output', 'Writing multiple files with some intentional failures:\n', 'info');
+      
+      try {
+        // Write some valid files
+        await window.opfsStorage.writeFile('valid1.txt', 'data1');
+        await window.opfsStorage.writeFile('valid2.txt', 'data2');
+        
+        // Try to read mix of valid and invalid files
+        const result = await window.opfsStorage.readFiles([
+          'valid1.txt',
+          'nonexistent.txt',
+          'valid2.txt',
+          'another-missing.txt'
+        ]);
+        
+        log('error-output', `Summary:`, 'info');
+        log('error-output', `  Total: ${result.total}`, 'info');
+        log('error-output', `  Succeeded: ${result.succeeded}`, 'success');
+        log('error-output', `  Failed: ${result.failed}`, 'error');
+        log('error-output', `\nSuccessfully read files:`, 'success');
+        for (const [name, content] of Object.entries(result.results)) {
+          log('error-output', `  ✓ ${name}: "${content}"`, 'success');
+        }
+        log('error-output', `\nFailed files:`, 'error');
+        result.errors.forEach(err => {
+          log('error-output', `  ✗ ${formatError(err)}`, 'error');
+        });
+        log('error-output', '\n✓ Operations continue despite failures, providing partial results', 'info');
+      } catch (error) {
+        log('error-output', formatError(error), 'error');
+      }
+    };
+
+    opfsList();
+  </script>
+</body>
+</html>

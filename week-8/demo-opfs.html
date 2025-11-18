@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPFS Storage Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status.supported {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status.not-supported {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon {
+      font-size: 24px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-info {
+      background: #3b82f6;
+      color: white;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .file-list {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .file-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .file-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .file-size {
+      color: #6b7280;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .file-actions button {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .output {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .output-line {
+      margin-bottom: 4px;
+      padding: 2px 0;
+    }
+
+    .output-line.success {
+      color: #6ee7b7;
+    }
+
+    .output-line.error {
+      color: #fca5a5;
+    }
+
+    .output-line.info {
+      color: #93c5fd;
+    }
+
+    .output-line.warning {
+      color: #fcd34d;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .stat-card {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗄️ OPFS Storage Demo</h1>
+      <p class="subtitle">Origin Private File System - Browser-based file storage</p>
+      <span id="support-status" class="status">Checking...</span>
+    </div>
+
+    <!-- Write File Section -->
+    <div class="card">
+      <h2><span class="icon">✍️</span> Write File</h2>
+      <input type="text" id="write-filename" placeholder="Enter filename (e.g., notes.txt)" value="example.txt">
+      <textarea id="write-content" placeholder="Enter file content...">Hello, OPFS! This is a demo of Origin Private File System.</textarea>
+      <div class="controls">
+        <button class="btn-primary" onclick="writeFile()">
+          💾 Write Text File
+        </button>
+        <button class="btn-success" onclick="writeJSONFile()">
+          📋 Write JSON File
+        </button>
+      </div>
+    </div>
+
+    <!-- Read File Section -->
+    <div class="card">
+      <h2><span class="icon">📖</span> Read File</h2>
+      <input type="text" id="read-filename" placeholder="Enter filename to read" value="example.txt">
+      <div class="controls">
+        <button class="btn-info" onclick="readFile('text')">
+          📄 Read as Text
+        </button>
+        <button class="btn-info" onclick="readFile('arrayBuffer')">
+          🔢 Read as ArrayBuffer
+        </button>
+        <button class="btn-info" onclick="readFile('blob')">
+          🎯 Read as Blob
+        </button>
+        <button class="btn-success" onclick="readJSONFile()">
+          📋 Read as JSON
+        </button>
+      </div>
+    </div>
+
+    <!-- File Management -->
+    <div class="card">
+      <h2><span class="icon">📁</span> File Management</h2>
+      <div class="controls">
+        <button class="btn-primary" onclick="listFiles()">
+          📋 List All Files
+        </button>
+        <button class="btn-warning" onclick="getMetadata()">
+          ℹ️ Get File Info
+        </button>
+        <button class="btn-danger" onclick="deleteFile()">
+          🗑️ Delete File
+        </button>
+        <button class="btn-danger" onclick="clearStorage()">
+          ⚠️ Clear All Files
+        </button>
+      </div>
+
+      <div id="file-list" class="file-list" style="margin-top: 15px; display: none;">
+        <div class="empty-state">
+          <div>📂</div>
+          <div>No files yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage Stats -->
+    <div class="card">
+      <h2><span class="icon">📊</span> Storage Statistics</h2>
+      <button class="btn-info" onclick="getStorageStats()">
+        🔄 Refresh Stats
+      </button>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-usage">-</div>
+          <div class="stat-label">Used (MB)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-quota">-</div>
+          <div class="stat-label">Quota (MB)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-percent">-</div>
+          <div class="stat-label">Used (%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-files">-</div>
+          <div class="stat-label">Files</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="card">
+      <h2><span class="icon">💬</span> Console Output</h2>
+      <button class="btn-warning" onclick="clearOutput()" style="margin-bottom: 10px;">
+        🧹 Clear Console
+      </button>
+      <div id="output" class="output">
+        <div class="output-line info">Waiting for operations...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { OPFSStorage } from './opfs/opfs-storage.js';
+
+    let storage;
+    const outputEl = document.getElementById('output');
+    const fileListEl = document.getElementById('file-list');
+
+    function log(message, type = 'info') {
+      const line = document.createElement('div');
+      line.className = `output-line ${type}`;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      outputEl.appendChild(line);
+      outputEl.scrollTop = outputEl.scrollHeight;
+    }
+
+    async function init() {
+      const statusEl = document.getElementById('support-status');
+      
+      if (!navigator.storage || typeof navigator.storage.getDirectory !== 'function') {
+        statusEl.textContent = '❌ Not Supported';
+        statusEl.className = 'status not-supported';
+        log('OPFS is not supported in this browser', 'error');
+        log('Please use Chrome 86+, Edge 86+, or Opera 72+', 'warning');
+        return;
+      }
+
+      statusEl.textContent = '✅ Supported';
+      statusEl.className = 'status supported';
+      
+      try {
+        storage = new OPFSStorage();
+        await storage.init();
+        log('OPFS Storage initialized successfully!', 'success');
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        log(`Failed to initialize: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    window.writeFile = async function() {
+      const filename = document.getElementById('write-filename').value;
+      const content = document.getElementById('write-content').value;
+      
+      if (!filename) {
+        log('Please enter a filename', 'warning');
+        return;
+      }
+
+      try {
+        await storage.writeFile(filename, content);
+        log(`✅ File '${filename}' written successfully (${content.length} bytes)`, 'success');
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        log(`❌ Error writing file: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.writeJSONFile = async function() {
+      const filename = document.getElementById('write-filename').value || 'data.json';
+      const content = document.getElementById('write-content').value;
+      
+      try {
+        const data = JSON.parse(content);
+        await storage.writeJSON(filename.replace(/\.txt$/, '.json'), data);
+        log(`✅ JSON file '${filename}' written successfully`, 'success');
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          log('❌ Invalid JSON format', 'error');
+        } else {
+          log(`❌ Error writing JSON: ${error.message}`, 'error');
+        }
+        console.error(error);
+      }
+    };
+
+    window.readFile = async function(type = 'text') {
+      const filename = document.getElementById('read-filename').value;
+      
+      if (!filename) {
+        log('Please enter a filename to read', 'warning');
+        return;
+      }
+
+      try {
+        const content = await storage.readFile(filename, type);
+        log(`✅ File '${filename}' read successfully (type: ${type})`, 'success');
+        
+        if (type === 'text') {
+          log(`Content: ${content}`, 'info');
+        } else if (type === 'arrayBuffer') {
+          log(`ArrayBuffer size: ${content.byteLength} bytes`, 'info');
+          log(`First 16 bytes: ${Array.from(new Uint8Array(content.slice(0, 16))).join(', ')}`, 'info');
+        } else if (type === 'blob') {
+          log(`Blob size: ${content.size} bytes, type: ${content.type}`, 'info');
+        }
+      } catch (error) {
+        log(`❌ Error reading file: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.readJSONFile = async function() {
+      const filename = document.getElementById('read-filename').value;
+      
+      if (!filename) {
+        log('Please enter a filename to read', 'warning');
+        return;
+      }
+
+      try {
+        const data = await storage.readJSON(filename);
+        log(`✅ JSON file '${filename}' read successfully`, 'success');
+        log(`Data: ${JSON.stringify(data, null, 2)}`, 'info');
+      } catch (error) {
+        log(`❌ Error reading JSON: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.listFiles = async function() {
+      try {
+        const files = await storage.listFiles();
+        log(`📋 Found ${files.length} file(s)`, 'success');
+        
+        if (files.length === 0) {
+          fileListEl.innerHTML = '<div class="empty-state"><div>📂</div><div>No files yet</div></div>';
+          fileListEl.style.display = 'block';
+          return;
+        }
+
+        fileListEl.innerHTML = '';
+        fileListEl.style.display = 'block';
+        
+        for (const filename of files) {
+          const metadata = await storage.getMetadata(filename);
+          const item = document.createElement('div');
+          item.className = 'file-item';
+          item.innerHTML = `
+            <div>
+              <span class="file-name">📄 ${filename}</span>
+              <span class="file-size">${formatBytes(metadata.size)}</span>
+            </div>
+            <div class="file-actions">
+              <button class="btn-info" onclick="readFileByName('${filename}')">Read</button>
+              <button class="btn-danger" onclick="deleteFileByName('${filename}')">Delete</button>
+            </div>
+          `;
+          fileListEl.appendChild(item);
+        }
+        
+        log(`Files: ${files.join(', ')}`, 'info');
+      } catch (error) {
+        log(`❌ Error listing files: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.readFileByName = async function(filename) {
+      document.getElementById('read-filename').value = filename;
+      await readFile('text');
+    };
+
+    window.deleteFileByName = async function(filename) {
+      if (!confirm(`Delete '${filename}'?`)) return;
+      
+      try {
+        await storage.deleteFile(filename);
+        log(`✅ File '${filename}' deleted`, 'success');
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        log(`❌ Error deleting file: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.deleteFile = async function() {
+      const filename = document.getElementById('read-filename').value;
+      
+      if (!filename) {
+        log('Please enter a filename to delete', 'warning');
+        return;
+      }
+
+      if (!confirm(`Delete '${filename}'?`)) return;
+      
+      try {
+        await storage.deleteFile(filename);
+        log(`✅ File '${filename}' deleted successfully`, 'success');
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        log(`❌ Error deleting file: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.getMetadata = async function() {
+      const filename = document.getElementById('read-filename').value;
+      
+      if (!filename) {
+        log('Please enter a filename', 'warning');
+        return;
+      }
+
+      try {
+        const metadata = await storage.getMetadata(filename);
+        log(`✅ Metadata for '${filename}':`, 'success');
+        log(`  Name: ${metadata.name}`, 'info');
+        log(`  Size: ${formatBytes(metadata.size)}`, 'info');
+        log(`  Type: ${metadata.type || 'unknown'}`, 'info');
+        log(`  Modified: ${metadata.lastModified.toLocaleString()}`, 'info');
+      } catch (error) {
+        log(`❌ Error getting metadata: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.clearStorage = async function() {
+      if (!confirm('⚠️ This will delete ALL files. Are you sure?')) return;
+      
+      try {
+        const result = await storage.clear();
+        log(`✅ Cleared ${result.succeeded} file(s)`, 'success');
+        if (result.failed > 0) {
+          log(`⚠️ Failed to delete ${result.failed} file(s)`, 'warning');
+        }
+        await listFiles();
+        await getStorageStats();
+      } catch (error) {
+        log(`❌ Error clearing storage: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.getStorageStats = async function() {
+      try {
+        const estimate = await storage.getStorageEstimate();
+        const files = await storage.listFiles();
+        
+        document.getElementById('stat-usage').textContent = (estimate.usage / (1024 * 1024)).toFixed(2);
+        document.getElementById('stat-quota').textContent = (estimate.quota / (1024 * 1024)).toFixed(2);
+        document.getElementById('stat-percent').textContent = estimate.percentUsed;
+        document.getElementById('stat-files').textContent = files.length;
+        
+        log(`📊 Storage: ${formatBytes(estimate.usage)} / ${formatBytes(estimate.quota)} (${estimate.percentUsed}%)`, 'info');
+      } catch (error) {
+        log(`❌ Error getting storage stats: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.clearOutput = function() {
+      outputEl.innerHTML = '<div class="output-line info">Console cleared</div>';
+    };
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>

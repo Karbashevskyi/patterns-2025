@@ -21,7 +21,15 @@
     "--START--WEEK-2--": "This section of the code is for week 2",
     "week-2:solution:v1": "node week-2/solution.v1.ts",
     "week-2:solution:v2": "node week-2/solution.v2.ts",
-    "--FINISH--WEEK-2--": "This section of the code is for week 2"
+    "--FINISH--WEEK-2--": "This section of the code is for week 2",
+
+    "--START--WEEK-8--": "This section of the code is for week 8 - File System Storage",
+    "test:week-8": "node --test week-8/storage.unit.test.js",
+    "test:week-8:watch": "node --test --watch week-8/storage.unit.test.js",
+    "test:week-8:coverage": "node --test --experimental-test-coverage week-8/storage.unit.test.js",
+    "test:week-8:opfs": "echo '⚠️  OPFS tests skipped - Browser only (Chrome/Edge 86+)' && node --test week-8/opfs/opfs-storage.test.js",
+    "test:week-8:file-system": "echo '⚠️  File System tests skipped - Browser only or use mocks' && node --test week-8/file-system/file-system-storage.test.js",
+    "--FINISH--WEEK-8--": "This section of the code is for week 8"
   },
   "repository": {
     "type": "git",
